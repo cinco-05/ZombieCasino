@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HOTU character lineup (dev)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0a0612; overflow: hidden; font: 12px monospace; color: #ddd; }
+  canvas { display: block; }
+  #ui { position: fixed; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 8px; }
+  #ui button { font: inherit; margin: 2px; }
+  #atlas { position: fixed; right: 8px; top: 8px; width: 360px; border: 1px solid #444; display: none; }
+</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
+</head>
+<body>
+<div id="ui"></div>
+<img id="atlas">
+<script type="module" src="./lineup.js"></script>
+</body>
+</html>

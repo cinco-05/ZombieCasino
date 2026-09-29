@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HOTU viewmodels (dev)</title>
+<style>html, body { margin: 0; height: 100%; background: #1a1020; overflow: hidden; } canvas { display: block; }</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.js" } }</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { buildViewmodels } from '../src/gfx/viewmodels.js';
+import { makeEnvironment } from '../src/gfx/env.js';
+const r = new THREE.WebGLRenderer({ antialias: true });
+r.setSize(innerWidth, innerHeight);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(r.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x2a2030);
+scene.environment = makeEnvironment(r);
+scene.environmentIntensity = 1.2;
+scene.add(new THREE.HemisphereLight(0xc8b0ff, 0x241018, 1.1));
+const key = new THREE.DirectionalLight(0xffe0c0, 2.2); key.position.set(1, 1, 1); scene.add(key);
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.01, 20);
+const guns = buildViewmodels();
+const q = new URLSearchParams(location.search);
+const side = q.get('side') || 'right';
+Object.entries(guns).forEach(([id, g], i) => {
+  g.position.set((i % 2) * 1.1 - 0.55, Math.floor(i / 2) * -0.55 + 0.25, 0);
+  g.rotation.y = side === 'right' ? Math.PI / 2 : side === 'left' ? -Math.PI / 2 : +(q.get('ry') || 0.6);
+  scene.add(g);
+});
+cam.position.set(0, 0, 2.3);
+cam.lookAt(0, 0, 0);
+window.GUNS = { guns, cam, scene, r };
+r.setAnimationLoop(() => r.render(scene, cam));
+</script>
+</body>
+</html>

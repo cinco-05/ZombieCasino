@@ -1,0 +1,20 @@
+{
+  "name": "house-of-the-undead",
+  "version": "0.2.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node test/cards.test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.166.1"
+  },
+  "type": "module"
+}

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HOUSE OF THE UNDEAD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="styles/main.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+</head>
+<body>
+
+<canvas id="game-canvas"></canvas>
+
+<!-- ============================== LOADING ================================= -->
+<div id="loading-screen">
+  <div class="load-inner">
+    <div class="deco-rule"><span>♠</span></div>
+    <h1 class="title-main small-title"><span class="t-house">HOUSE OF THE</span><span class="t-undead">UNDEAD</span></h1>
+    <div class="load-bar"><div id="load-bar-fill"></div></div>
+    <div id="load-status">Unlocking the doors…</div>
+  </div>
+</div>
+
+<!-- ============================== HUD ==================================== -->
+<div id="hud">
+  <div id="hud-left" class="hud-plate">
+    <div id="perk-hud"></div>
+    <div class="vital">
+      <span class="vital-icon">♥</span>
+      <div class="bar bar-hp"><div id="hp-fill" class="fill fill-hp"></div></div>
+      <span id="hp-text" class="vital-num">100</span>
+    </div>
+    <div id="armor-wrap" class="vital" style="display:none">
+      <span class="vital-icon armor-icon">◆</span>
+      <div class="bar bar-thin"><div id="armor-fill" class="fill fill-armor"></div></div>
+    </div>
+    <div id="penalties-hud"></div>
+    <div id="parts-hud" class="hidden"></div>
+    <div id="coop-hud" class="hidden">
+      <div class="coop-name">PARTNER</div>
+      <div class="bar bar-thin"><div id="coop-hp" class="fill fill-hp"></div></div>
+      <div id="coop-state" class="dim small"></div>
+    </div>
+  </div>
+  <div id="coop-down" class="hidden"><b id="coop-down-t">YOU'RE DOWN</b><span id="coop-down-sub"></span></div>
+
+  <div id="hud-right" class="hud-plate">
+    <div id="weapon-name">Lucky Seven</div>
+    <div id="ammo"><span id="ammo-mag">12</span><span class="ammo-sep">/</span><span id="ammo-reserve">48</span></div>
+    <div id="weapon-slots"></div>
+    <div class="hud-row">
+      <div id="gear-hud"></div>
+      <div id="dash-wrap"><span class="bar-label">DASH</span><div class="bar bar-thin"><div id="dash-fill" class="fill fill-dash"></div></div></div>
+    </div>
+  </div>
+
+  <div id="chips-wrap"><span class="chip-icon"></span><span id="chips-hud">0</span></div>
+  <div id="goals-hud"></div>
+  <div id="combo-hud" style="display:none">COMBO</div>
+
+  <canvas id="radar" width="150" height="150" class="hidden"></canvas>
+
+  <div id="hud-top">
+    <div id="round-hud">—</div>
+    <div id="enemies-hud">0</div>
+    <div id="objective-hud" style="display:none"></div>
+    <div id="jackpot-meter" class="hidden"><div class="jm-label">PROGRESSIVE JACKPOT <b id="jm-pct">0%</b></div><div class="jm-bar"><div id="jm-fill"></div></div></div>
+    <div id="comps-hud"></div>
+  </div>
+
+  <div id="boss-bar" class="hidden">
+    <div id="boss-name">BOSS</div>
+    <div class="bar bar-boss"><div id="boss-fill" class="fill fill-boss"></div></div>
+  </div>
+
+  <div id="crosshair"><i class="ch-t"></i><i class="ch-b"></i><i class="ch-l"></i><i class="ch-r"></i><i class="ch-dot"></i></div>
+  <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="reload-bar" style="display:none"><div id="reload-fill"></div></div>
+  <div id="threat-layer"></div>
+  <div id="blood-overlay"></div>
+  <div id="dmg-dir"></div>
+  <div id="damage-vignette"></div>
+  <div id="float-layer"></div>
+  <div id="whiteout"></div>
+  <div id="interact-prompt"></div>
+  <div id="banner-el"></div>
+  <div id="prompt"></div>
+  <div id="countdown-el"></div>
+</div>
+
+<!-- ============================ MAIN MENU ================================= -->
+<div id="main-menu" class="menu-screen hidden">
+  <div class="menu-column">
+    <div class="deco-rule"><span>♠ ♥ ♣ ♦</span></div>
+    <h1 class="title-main"><span class="t-house">HOUSE OF THE</span><span class="t-undead">UNDEAD</span></h1>
+    <p class="tagline">The casino never closed. The gamblers never left.</p>
+    <nav class="menu-list">
+      <button id="btn-continue" class="menu-item hidden">CONTINUE RUN</button>
+      <button id="btn-start" class="menu-item primary">ENTER THE CASINO</button>
+      <button id="btn-coop" class="menu-item">🤝 PLAY WITH A FRIEND</button>
+      <button id="btn-daily" class="menu-item daily">⚡ DAILY RUN</button>
+      <button id="btn-vault" class="menu-item">THE VAULT</button>
+      <button id="btn-markers" class="menu-item">🏆 MARKERS &amp; CHIPS</button>
+      <button id="btn-settings-main" class="menu-item">SETTINGS</button>
+      <button id="btn-quit" class="menu-item quit">QUIT</button>
+      <div id="menu-loyalty"></div>
+    </nav>
+    <div id="highscore-display" class="dim"></div>
+  </div>
+  <div class="menu-controls">
+    <div><kbd>WASD</kbd> move</div><div><kbd>MOUSE</kbd> aim · fire</div><div><kbd>RMB</kbd> iron sights</div>
+    <div><kbd>SHIFT</kbd> sprint</div><div><kbd>SPACE</kbd> jump</div><div><kbd>Q</kbd> dash</div>
+    <div><kbd>G</kbd> lethal</div><div><kbd>T</kbd> tactical</div><div><kbd>E</kbd> use · buy</div>
+    <div><kbd>F</kbd> pistol-whip</div><div><kbd>R</kbd> reload</div><div><kbd>1–3</kbd> / <kbd>WHEEL</kbd> guns</div>
+    <div><kbd>ESC</kbd> pause</div><div><kbd>F11</kbd> fullscreen</div><div><kbd>F3</kbd> debug</div>
+  </div>
+  <p class="fine-print">All chips and wagers are fictional game currency with no real-world value.</p>
+</div>
+
+<!-- ============================ PAUSE MENU ================================ -->
+<!-- ============================ 1930s: IRIS + TITLE CARD ====================== -->
+<div id="iris"></div>
+<div id="title-card"><div class="tc-pre">A HOUSE OF THE UNDEAD CARTOON</div><div class="tc-title" id="tc-title"></div><div class="tc-round" id="tc-round"></div></div>
+
+<!-- ============================ REWARDS ON SCREEN ============================ -->
+<div id="reward-toasts"></div>
+<div id="reward-card"><div id="rc-rarity"></div><div id="rc-icon"></div><div id="rc-title"></div><div id="rc-sub"></div></div>
+
+<!-- ============================ MARKERS & CHIPS ============================= -->
+<div id="markers-panel" class="panel fullscreen hidden">
+  <div class="deco-card wide">
+    <h2>MARKERS &amp; CHIPS</h2>
+    <div id="markers-body"></div>
+    <button id="btn-markers-close" class="btn">BACK</button>
+  </div>
+</div>
+
+<!-- ============================== CO-OP LOBBY ============================== -->
+<div id="coop-panel" class="panel fullscreen hidden">
+  <div class="deco-card">
+    <h2>PLAY WITH A FRIEND</h2>
+    <p class="dim">Two gamblers, one house. Host a table and send your friend the code — or type theirs.</p>
+    <button id="btn-coop-host" class="btn btn-big">HOST A TABLE</button>
+    <div id="coop-code-wrap" class="hidden">
+      <div class="dim small">ROOM CODE</div>
+      <div id="coop-code">-----</div>
+      <button id="btn-coop-copy" class="btn small-btn">COPY</button>
+    </div>
+    <div class="coop-or dim small">— or join a table —</div>
+    <div class="coop-join">
+      <input id="coop-join-code" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false">
+      <button id="btn-coop-join" class="btn">JOIN</button>
+    </div>
+    <div id="coop-status"></div>
+    <div class="coop-class-row"><span id="coop-class" class="dim small"></span> <button id="btn-coop-class" class="btn small-btn">CHANGE CLASS</button></div>
+    <button id="btn-coop-start" class="btn btn-big btn-gold hidden">DEAL US IN</button>
+    <button id="btn-coop-back" class="btn">BACK</button>
+    <p class="dim small">Needs an internet connection. Room codes go through the free PeerJS matchmaking service; the game itself connects you directly.</p>
+  </div>
+</div>
+
+<div id="pause-menu" class="panel fullscreen hidden">
+  <div class="deco-card">
+    <h2>PAUSED</h2>
+    <p class="dim">The zombies wait politely.</p>
+    <button id="btn-resume" class="btn btn-big">RESUME</button>
+    <button id="btn-restart-pause" class="btn">RESTART RUN</button>
+    <button id="btn-settings-pause" class="btn">SETTINGS</button>
+    <button id="btn-debug-pause" class="btn small-btn">🛠 DEBUG MODE (F3)</button>
+    <button id="btn-quit-pause" class="btn btn-danger">QUIT TO MENU</button>
+  </div>
+</div>
+
+<!-- ============================= SETTINGS ================================= -->
+<div id="settings-panel" class="panel fullscreen hidden">
+  <div class="deco-card wide">
+    <h2>SETTINGS</h2>
+    <div class="setting-row"><label>Art style<br><span class="dim small">Restarts the game to apply</span></label>
+      <select id="set-art">
+        <option value="1930s">1930s Cartoon — ink, rubber hose, old film</option>
+        <option value="1930bw">1930s Black &amp; White — the Betty Boop years</option>
+        <option value="modern">Modern — lit, glossy, neon</option>
+      </select></div>
+    <div class="setting-row"><label>Graphics quality<br><span class="dim small">Lower it if the game stutters</span></label>
+      <select id="set-quality">
+        <option value="ultra">Ultra — 2x supersampled (graphics card)</option>
+        <option value="high">High — bloom + 4x AA</option>
+        <option value="medium">Medium — bloom + 2x AA</option>
+        <option value="low">Low — fastest</option>
+      </select></div>
+    <div class="setting-row"><label>Field of view <span id="fov-val" class="gold"></span></label>
+      <input id="set-fov" type="range" min="60" max="100" step="1" value="75"></div>
+    <div class="setting-row"><label>Mouse sensitivity</label>
+      <input id="set-sensitivity" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+    <div class="setting-row"><label>Master volume</label>
+      <input id="set-master" type="range" min="0" max="1" step="0.05" value="0.8"></div>
+    <div class="setting-row"><label>Music volume</label>
+      <input id="set-music" type="range" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="setting-row"><label>Effects volume</label>
+      <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
+    <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
+      <input id="set-reduced-flash" type="checkbox"></div>
+    <div class="setting-row"><label>Display</label>
+      <button id="btn-fullscreen" class="btn small-btn">TOGGLE FULLSCREEN (F11)</button>
+      <button id="btn-debug-settings" class="btn small-btn">🛠 DEBUG MODE (F3)</button></div>
+    <button id="btn-settings-close" class="btn btn-big">DONE</button>
+  </div>
+</div>
+
+<!-- =============================== VAULT ================================== -->
+<div id="vault-panel" class="panel fullscreen hidden">
+  <div class="deco-card wide">
+    <h2 class="gold">THE VAULT</h2>
+    <p class="dim small">A cut of every run's chips is deposited here — 20%, plus 2% per round you reached, plus 10% for beating the house. Only chips you EARNED count; Front Money starting chips can't be re-deposited. Spend it on permanent perks.</p>
+    <div id="vault-balance" class="chip-balance big-chips"></div>
+    <div id="vault-perks"></div>
+    <button id="btn-vault-close" class="btn btn-big">BACK</button>
+  </div>
+</div>
+
+<!-- ============================ COAT CHECK ================================ -->
+<div id="coatcheck-panel" class="panel fullscreen hidden coat-screen">
+  <div class="deco-rule shop-title"><span>THE COAT CHECK</span></div>
+  <p class="shop-sub">Hand over your coat, take a ticket. Every ticket is a way to walk in: a primary, a sidearm, a lethal, a tactical, and one vice.</p>
+  <div id="coat-tickets" class="coat-tickets"></div>
+  <div class="coat-name-row"><label for="coat-name">NAME ON THE TICKET</label><input id="coat-name" maxlength="22" spellcheck="false" autocomplete="off"></div>
+  <div id="coat-slots" class="coat-slots"></div>
+  <div id="coat-picker-title" class="coat-picker-title"></div>
+  <div id="coat-picker" class="coat-picker"></div>
+  <div class="coat-foot">
+    <button id="btn-coat-back" class="btn btn-ghost">◂ BACK</button>
+    <button id="btn-coat-reset" class="btn">RESET TICKET</button>
+    <button id="btn-coat-go" class="btn btn-big">WALK IN ▸</button>
+  </div>
+</div>
+
+<!-- ============================ BOSS INTRO ================================ -->
+<div id="boss-intro" class="panel fullscreen hidden intro-dark">
+  <div class="boss-card">
+    <div class="deco-rule"><span>☠</span></div>
+    <h1 id="boss-intro-title" class="red">THE PIT BOSS</h1>
+    <p id="boss-intro-sub" class="dim"></p>
+  </div>
+</div>
+
+<!-- =========================== INTERMISSION =============================== -->
+<div id="intermission" class="panel fullscreen hidden shop-screen">
+  <div class="shop-head">
+    <div class="shop-round">
+      <h2 id="inter-round">ROUND CLEARED</h2>
+      <div id="inter-next" class="shop-next"></div>
+    </div>
+    <div class="shop-vitals" id="shop-vitals"></div>
+    <div class="shop-bank"><span class="chip-icon"></span><span class="chip-balance">0 CHIPS</span></div>
+  </div>
+  <div class="deco-rule shop-title"><span>THE HOUSE SHOP</span></div>
+  <p class="shop-sub">Tonight's cards. Buy a table card to sit down and gamble for upgrades — win the tier on the card, lose and pay its penalty. The shelf changes every visit.</p>
+  <div id="shop-status" class="shop-status"></div>
+  <div id="shop-cards" class="shop-cards"></div>
+  <div class="shop-foot">
+    <button id="btn-reroll" class="btn shop-reroll">REROLL</button>
+    <div id="inter-timer" class="dim shop-timer"></div>
+    <button id="btn-cashout" class="btn btn-gold" style="display:none">CASH OUT — END THE RUN VICTORIOUS</button>
+    <button id="btn-skip-gamble" class="btn btn-big">NEXT ROUND ▸</button>
+  </div>
+  <p class="fine-print">Fictional currency. No real gambling.</p>
+</div>
+
+<!-- ============================ BLACKJACK ================================= -->
+<div id="blackjack-panel" class="panel center-panel hidden felt">
+  <h2>♠ BLACKJACK ♥</h2>
+  <div id="bj-wager-info" class="dim small"></div>
+  <div class="bj-row"><span class="seat">DEALER</span><div id="bj-dealer-cards" class="card-row"></div><span id="bj-dealer-value" class="hand-val"></span></div>
+  <div class="bj-row"><span class="seat">YOU</span><div id="bj-player-cards" class="card-row"></div><span id="bj-player-value" class="hand-val"></span></div>
+  <div id="bj-status" class="bj-status">Hit or stand?</div>
+  <div class="btn-row">
+    <button id="bj-hit" class="btn">HIT</button>
+    <button id="bj-stand" class="btn">STAND</button>
+    <button id="bj-double" class="btn btn-gold">DOUBLE DOWN</button>
+  </div>
+  <p class="dim small">Dealer stands on 17. Blackjack pays as a win. Push returns your wager.</p>
+</div>
+
+<!-- ============================= ROULETTE ================================= -->
+<div id="roulette-panel" class="panel center-panel hidden felt">
+  <h2>◉ ROULETTE</h2>
+  <div id="rou-wager-info" class="dim small"></div>
+  <canvas id="roulette-canvas" width="340" height="340"></canvas>
+  <div id="rou-status" class="bj-status">Place your bet.</div>
+  <div id="rou-history"></div>
+  <div class="rou-grid">
+    <button class="rou-bet btn rb-red" data-bet="red">RED</button>
+    <button class="rou-bet btn rb-black" data-bet="black">BLACK</button>
+    <button class="rou-bet btn" data-bet="odd">ODD</button>
+    <button class="rou-bet btn" data-bet="even">EVEN</button>
+    <button class="rou-bet btn" data-bet="low">1–18</button>
+    <button class="rou-bet btn" data-bet="high">19–36</button>
+  </div>
+  <div class="rou-single">
+    <button class="rou-bet btn rb-green" data-bet="green">● GREEN 0</button>
+    <button class="rou-bet btn btn-gold" data-bet="single">SINGLE NUMBER (bigger payout)</button>
+    <input id="rou-number" type="number" min="0" max="36" value="7">
+  </div>
+  <button id="rou-spin" class="btn btn-big" disabled>SPIN</button>
+</div>
+
+<!-- =============================== POKER ================================== -->
+<div id="poker-panel" class="panel center-panel hidden felt">
+  <h2>🃏 FIVE CARD DRAW</h2>
+  <div id="poker-wager-info" class="dim small"></div>
+  <div class="bj-row"><span class="seat">DEALER</span><div id="poker-dealer-cards" class="card-row"></div></div>
+  <div class="bj-row"><span class="seat">YOU</span><div id="poker-player-cards" class="card-row"></div></div>
+  <div id="poker-status" class="bj-status">Click cards to HOLD, then draw.</div>
+  <div class="btn-row">
+    <button id="poker-draw" class="btn btn-big">DRAW</button>
+  </div>
+  <p class="dim small">One draw. Beat the dealer and your hand rank sets the reward:<br>
+  pair or less = COMMON · two pair to straight = RARE · flush or better = LEGENDARY.<br>
+  Lose and it's a moderate penalty next round.</p>
+</div>
+
+<!-- =============================== SLOTS ================================== -->
+<div id="slots-panel" class="panel center-panel hidden felt">
+  <h2>🎰 LUCKY UNDEAD SLOTS</h2>
+  <div class="chip-balance"></div>
+  <div id="slots-reels" class="grid5"></div>
+  <div id="slots-status" class="bj-status">Pull the arm.</div>
+  <div id="slots-respin-row" style="display:none">
+    <span class="dim small">One free re-spin — pick a column:</span>
+    <button class="respin-btn btn" data-reel="0">C1</button>
+    <button class="respin-btn btn" data-reel="1">C2</button>
+    <button class="respin-btn btn" data-reel="2">C3</button>
+    <button class="respin-btn btn" data-reel="3">C4</button>
+    <button class="respin-btn btn" data-reel="4">C5</button>
+  </div>
+  <div class="btn-row">
+    <button id="slots-spin" class="btn btn-big">PULL THE ARM</button>
+    <button id="slots-close" class="btn btn-ghost">BACK TO THE SHOP</button>
+  </div>
+  <p class="dim small">7 paylines: 5 rows + both diagonals. Runs of 3+ pay: x1 / x3 / x10 for 3 / 4 / 5 in a row.<br>Five 7s in a line pays 1200. Bells give ammo, hearts heal, skulls sting (they can't kill you).</p>
+</div>
+
+<!-- ============================= UPGRADES ================================= -->
+<div id="upgrade-panel" class="panel fullscreen hidden">
+  <h2 id="upgrade-tier-label" class="gold">REWARD — CHOOSE ONE</h2>
+  <div id="upgrade-cards"></div>
+  <div id="upgrade-stats" class="dim small"></div>
+</div>
+
+<!-- ============================== SUMMARY ================================= -->
+<div id="summary-panel" class="panel fullscreen hidden">
+  <div class="deco-card">
+    <h1 id="summary-title">THE HOUSE WINS</h1>
+    <p id="summary-cause" class="dim"></p>
+    <div id="summary-stats"></div>
+    <div id="summary-progress"></div>
+    <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
+    <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
+  </div>
+</div>
+
+<!-- =============================== DEBUG ================================== -->
+<div id="debug-panel" class="hidden"></div>
+
+<script src="vendor/peerjs.min.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
