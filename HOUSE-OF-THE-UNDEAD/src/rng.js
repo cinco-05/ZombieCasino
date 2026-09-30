@@ -44,20 +44,24 @@ export function randomSeed() {
 export const Seed = {
   text: '',
   custom: false,          // typed in by the player (restarts keep it)
+  salt: '',               // co-op: each seat's own slice of the seed ('' alone)
   _streams: new Map(),
 
-  /** start a run on this seed (blank = a fresh random one); returns the seed */
-  begin(text = '') {
+  /** start a run on this seed (blank = a fresh random one); returns the seed.
+      salt: co-op seats pass their own, so everyone's shop and cards differ
+      but the seed still replays the same table */
+  begin(text = '', salt = '') {
     const typed = normalizeSeed(text);
     this.custom = !!typed;
     this.text = typed || randomSeed();
+    this.salt = salt;
     this._streams = new Map();
     return this.text;
   },
 
   stream(name) {
     let s = this._streams.get(name);
-    if (!s) { s = new Stream(hashStr(`${this.text}/${name}`)); this._streams.set(name, s); }
+    if (!s) { s = new Stream(hashStr(`${this.text}/${this.salt}${name}`)); this._streams.set(name, s); }
     return s;
   },
 
@@ -70,12 +74,13 @@ export const Seed = {
   save() {
     const s = {};
     for (const [k, v] of this._streams) s[k] = v.s;
-    return { text: this.text, custom: this.custom, s };
+    return { text: this.text, custom: this.custom, salt: this.salt, s };
   },
   restore(d) {
     if (!d || !d.text) { this.begin(); return; }
     this.text = d.text;
     this.custom = !!d.custom;
+    this.salt = d.salt || '';
     this._streams = new Map(Object.entries(d.s || {}).map(([k, v]) => [k, new Stream(v)]));
   },
 };

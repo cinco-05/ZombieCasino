@@ -41,11 +41,7 @@
     </div>
     <div id="penalties-hud"></div>
     <div id="parts-hud" class="hidden"></div>
-    <div id="coop-hud" class="hidden">
-      <div class="coop-name">PARTNER</div>
-      <div class="bar bar-thin"><div id="coop-hp" class="fill fill-hp"></div></div>
-      <div id="coop-state" class="dim small"></div>
-    </div>
+    <div id="coop-hud" class="hidden"></div>
   </div>
   <div id="coop-down" class="hidden"><b id="coop-down-t">YOU'RE DOWN</b><span id="coop-down-sub"></span></div>
 
@@ -102,7 +98,7 @@
     <nav class="menu-list">
       <button id="btn-continue" class="menu-item hidden">CONTINUE RUN</button>
       <button id="btn-start" class="menu-item primary">ENTER THE CASINO</button>
-      <button id="btn-coop" class="menu-item">🤝 PLAY WITH A FRIEND</button>
+      <button id="btn-coop" class="menu-item">🤝 PLAY WITH FRIENDS (UP TO 4)</button>
       <button id="btn-seed" class="menu-item seed">🎲 PLAY A SEED</button>
       <button id="btn-vault" class="menu-item">THE VAULT</button>
       <button id="btn-markers" class="menu-item">🏆 MARKERS &amp; CHIPS</button>
@@ -117,9 +113,19 @@
     <div><kbd>SHIFT</kbd> sprint</div><div><kbd>SPACE</kbd> jump</div><div><kbd>Q</kbd> dash</div>
     <div><kbd>G</kbd> lethal</div><div><kbd>T</kbd> tactical</div><div><kbd>E</kbd> use · buy</div>
     <div><kbd>F</kbd> pistol-whip</div><div><kbd>R</kbd> reload</div><div><kbd>1–3</kbd> / <kbd>WHEEL</kbd> guns</div>
-    <div><kbd>ESC</kbd> pause</div><div><kbd>F11</kbd> fullscreen</div><div><kbd>F3</kbd> debug</div>
+    <div><kbd>TAB</kbd> scoreboard</div><div><kbd>ESC</kbd> pause</div><div><kbd>F11</kbd> fullscreen</div><div><kbd>F3</kbd> debug</div>
   </div>
   <p class="fine-print">All chips and wagers are fictional game currency with no real-world value.</p>
+</div>
+
+<!-- ============================ SCOREBOARD (hold TAB) ===================== -->
+<div id="scoreboard" class="hidden">
+  <div class="sb-head"><b>THE TABLE</b><span id="sb-sub"></span></div>
+  <table>
+    <thead><tr><th class="sb-name">PLAYER</th><th>PING</th><th>KILLS</th><th>DEATHS</th><th>DAMAGE</th><th>CHIPS</th></tr></thead>
+    <tbody id="sb-rows"></tbody>
+  </table>
+  <div class="sb-foot">Hold <kbd>TAB</kbd> · deaths count every time you go down</div>
 </div>
 
 <!-- ============================ PAUSE MENU ================================ -->
@@ -143,8 +149,9 @@
 <!-- ============================== CO-OP LOBBY ============================== -->
 <div id="coop-panel" class="panel fullscreen hidden">
   <div class="deco-card">
-    <h2>PLAY WITH A FRIEND</h2>
-    <p class="dim">Two gamblers, one house. Host a table and send your friend the code — or type theirs.</p>
+    <h2>PLAY WITH FRIENDS</h2>
+    <p class="dim">Up to four gamblers, one house. Host a table and send your friends the code — or type theirs.</p>
+    <div class="coop-name-row"><label for="coop-name">YOUR NAME</label><input id="coop-name" maxlength="16" spellcheck="false" autocomplete="off"></div>
     <button id="btn-coop-host" class="btn btn-big">HOST A TABLE</button>
     <div id="coop-code-wrap" class="hidden">
       <div class="dim small">ROOM CODE</div>
@@ -157,6 +164,7 @@
       <button id="btn-coop-join" class="btn">JOIN</button>
     </div>
     <div id="coop-status"></div>
+    <div id="coop-seats" class="coop-seats"></div>
     <div class="coop-class-row"><span id="coop-class" class="dim small"></span> <button id="btn-coop-class" class="btn small-btn">CHANGE CLASS</button></div>
     <button id="btn-coop-start" class="btn btn-big btn-gold hidden">DEAL US IN</button>
     <button id="btn-coop-back" class="btn">BACK</button>

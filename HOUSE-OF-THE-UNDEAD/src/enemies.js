@@ -129,11 +129,12 @@ class Zombie {
 
   takeDamage(dmg, strong, point, cause = 'hit', isHead = false) {
     if (this.dead) return;
-    if (cause !== 'fire') this.lastHitBy = this._byGuest ? 'guest' : 'host';
+    if (cause !== 'fire') this.lastHitBy = this._by ?? 0;      // co-op: the seat that fired (0 = the host)
     this.lastCause = cause;
     this._lastHitHead = isHead;
     // pit guard body armor: full damage only on the head
     if (this.kind === 'pitguard' && !isHead) dmg *= (1 - this.def.bodyResist);
+    if (this._by == null) this.game.stats.damage += Math.max(0, Math.min(dmg, this.hp));   // the scoreboard (guests count their own)
     this.hp -= dmg;
     this.hitFlash = 0.08;
     this.char.flinch(strong ? 0.9 : 0.5);
@@ -151,8 +152,7 @@ class Zombie {
     this.dead = true;
     const g = this.game;
     g.audioAt('zombie_die', this.mesh.position);
-    const guestKill = g.net.active && this.lastHitBy === 'guest';
-    if (!guestKill) g.onKill(this);
+    if (!g.net.creditedElsewhere(this)) g.onKill(this);    // co-op: another seat's kill goes on their card
 
     // drops
     const chipMult = this.elite ? CONFIG.eliteMult.chips : 1;
@@ -508,8 +508,8 @@ export class Enemies {
       this.navT = 0.22;
       const t = this.lure ? this.lure.pos : this.game.player.pos;
       this.game.arena.nav.build(t.x, t.z);
-      const r = this.game.net.isHost ? this.game.net.remote : null;
-      if (r && r.alive) this.game.arena.nav2.build(r.pos.x, r.pos.z);
+      // co-op: a field for every teammate still standing
+      if (this.game.net.isHost) for (const r of this.game.net.aliveRemotes()) r.nav.build(r.pos.x, r.pos.z);
     }
     // trickle spawns
     this.spawnT -= dt;
@@ -674,9 +674,8 @@ export class Enemies {
         b.takeDamage(damage * 0.8, false, b.mesh.position.clone().setY(2));
       }
     }
-    // the partner caught in a hostile blast (they check their own Powder Keg)
-    const r = g.net.isHost ? g.net.remote : null;
-    if (hostile && r && r.alive && r.pos.distanceTo(pos) < radius) r.takeDamage(damage * 0.5, null, true);
+    // teammates caught in a hostile blast (they check their own Powder Keg)
+    if (hostile && g.net.isHost) for (const r of g.net.aliveRemotes()) if (r.pos.distanceTo(pos) < radius) r.takeDamage(damage * 0.5, null, true);
     // POWDER KEG PUNCH: blasts can't touch you
     if (g.perkFx?.blastProof) return;
     if (hostile && g.player.pos.distanceTo(pos) < radius) {

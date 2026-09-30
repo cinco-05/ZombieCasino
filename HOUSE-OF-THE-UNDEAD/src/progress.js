@@ -46,7 +46,7 @@ export const MARKERS = [
   { id: 'rich', name: 'HIGH ROLLER', desc: 'Hold 2,000 chips at once', stat: 'maxChips', kind: 'max', goal: 2000, xp: 70 },
   { id: 'doors', name: 'ALL ACCESS', desc: 'Open every door in one run', stat: 'doorsRun', kind: 'max', goal: 3, xp: 60 },
   { id: 'coop', name: 'TWO FOR ONE', desc: 'Play a co-op run', stat: 'coopRuns', goal: 1, xp: 50 },
-  { id: 'revive', name: 'GOOD SAMARITAN', desc: 'Pick your partner up 10 times', stat: 'revives', goal: 10, xp: 80 },
+  { id: 'revive', name: 'GOOD SAMARITAN', desc: 'Pick a teammate up 10 times', stat: 'revives', goal: 10, xp: 80 },
   { id: 'runs10', name: 'REGULAR', desc: 'Play 10 runs', stat: 'runs', goal: 10, xp: 60 },
 ];
 

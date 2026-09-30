@@ -1,17 +1,20 @@
-// net.js — co-op with a friend over the internet, by room code.
+// net.js — co-op for up to four gamblers over the internet, by room code.
 //
-// PeerJS (vendor/peerjs.min.js) introduces the two games through its free
-// public matchmaking server, then they talk directly (WebRTC; PeerJS's relay
-// servers step in when a home network won't allow a direct line).
+// PeerJS (vendor/peerjs.min.js) introduces the games through its free public
+// matchmaking server, then they talk directly (WebRTC; PeerJS's relay servers
+// step in when a home network won't allow a direct line).
 //
 // The HOST runs the real house: the horde, the bosses, the rounds, the drops.
-// The GUEST runs their own gambler (movement, guns, gear, shop, perks) and sees
-// the horde as PUPPETS — the same rigged characters, moved by the host's
-// snapshots 20 times a second. Everything the guest does TO the horde (shots,
-// blasts, stuns, slips, fire) is sent to the host and applied there. Kills pay
-// whoever landed the killing blow; doors are shared; each has their own chips,
-// shop, cocktails, LADY LUCK and ALL IN. Down in co-op means bleeding out for
-// 30 seconds — your partner holds E on you to deal you back in.
+// Up to three GUESTS connect to the host (a star: guests never talk to each
+// other directly; the host passes along what they need to see). Each guest
+// runs their own gambler (movement, guns, gear, shop, perks) and sees the horde
+// as PUPPETS — the same rigged characters, moved by the host's snapshots 20
+// times a second. Everything a guest does TO the horde (shots, blasts, stuns,
+// slips, fire) is sent to the host and applied there, tagged with their seat.
+// Kills pay whoever landed the killing blow; doors are shared; everyone has
+// their own chips, shop (dealt from their own seat's slice of the seed),
+// cocktails, LADY LUCK and ALL IN. Down in co-op means bleeding out for 30
+// seconds — anyone standing over you can hold E to deal you back in.
 
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
@@ -22,58 +25,88 @@ import { GUNFX } from './weapons.js';
 import { STYLE } from './gfx/style.js';
 import { randomSeed } from './rng.js';
 
-const PROTO = 1;
+const PROTO = 2;
 const PREFIX = 'hotu-coop-';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';    // no I/L/O/0/1 to misread
 const SEND_DT = 1 / 20;
-const REVIVE_TIME = 3;
+export const MAX_PLAYERS = 4;
+export const REVIVE_TIME = 3;
+const REVIVE_RANGE = 2.6;
+const SILENT_DROP = 45000;       // ms without a word (pings go every second) before a line counts as dead
 export const BLEED_TIME = 30;
+// seat 0 is the host; each seat has its own dinner jacket and color
+const SEAT_LOOK = ['gambler2', 'gambler', 'gambler3', 'gambler4'];
+export const SEAT_COLOR = ['#ff6a7a', '#f4e8c8', '#6aff9a', '#7ab8ff'];
+const NAME_KEY = 'hotu_name_v1';
 const $ = (id) => document.getElementById(id);
 const r2 = (v) => Math.round(v * 100) / 100;
+const cleanName = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9 .'!-]/g, '').trim().slice(0, 16);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// ============================ the partner, as the AI sees them =============
-class RemotePlayer {
-  constructor(game) {
+function loadName() {
+  let n = '';
+  try { n = cleanName(localStorage.getItem(NAME_KEY)); } catch { /* private mode */ }
+  if (n) return n;
+  const nick = ['LUCKY', 'ACE', 'DEUCE', 'JOKER', 'DICE', 'ROYAL', 'SNAKE EYES', 'HIGH ROLLER'][Math.floor(Math.random() * 8)];
+  return `${nick} ${10 + Math.floor(Math.random() * 90)}`;
+}
+
+// ====================== another gambler, as this game sees them ============
+export class RemotePlayer {
+  constructor(game, seat, name) {
     this.game = game;
+    this.seat = seat;
+    this.name = name || `PLAYER ${seat + 1}`;
     this.isRemote = true;
+    this.avatar = null;
+    this.ping = 0;                // host: measured to them; guest: what they report
+    this.stats = { kills: 0, deaths: 0, damage: 0, chips: 0 };
+    this.ready = false;
     this.reset();
   }
   reset() {
-    this.pos = new THREE.Vector3(1.6, CONFIG.player.eyeHeight, 8);
+    this.pos = new THREE.Vector3(1.6 * this.seat, CONFIG.player.eyeHeight, 8);
     this.yaw = Math.PI; this.pitch = 0;
     this.onGround = true;
     this.hp = 100; this.maxHp = 100;
-    this.down = false; this.bled = false;
+    this.down = false; this.bled = false; this.downT = 0;
     this.gun = 'shotgun'; this.packed = false;
     this.shots = 0;
     this.seen = false;
+    this.ready = false;
+    this.reviveSent = 0;
   }
   get alive() { return this.seen && !this.down && !this.bled; }
-  get nav() { return this.game.arena.nav2; }
+  get nav() { return this.game.arena.navFor(this.seat); }
   forwardFlat() { return new THREE.Vector3(-Math.sin(this.yaw), 0, -Math.cos(this.yaw)); }
-  /** the host's horde hurts the partner: tell their game */
+  /** the host's horde hurts this gambler: tell their game */
   takeDamage(amount, source = null, blast = false) {
     const g = this.game;
     if (!this.alive || g.state === 'SUMMARY') return false;
     const at = source?.mesh?.position;
-    g.net.send({ t: 'hurt', d: r2(amount), n: source?.def?.name || null, x: at ? r2(at.x) : null, z: at ? r2(at.z) : null, b: blast ? 1 : 0 });
+    g.net.sendTo(this.seat, { t: 'hurt', d: r2(amount), n: source?.def?.name || null, x: at ? r2(at.x) : null, z: at ? r2(at.z) : null, b: blast ? 1 : 0 });
     return true;
   }
+  dispose() { if (this.avatar) { this.avatar.dispose(); this.avatar = null; } }
 }
 
-// ============================ the partner's body ===========================
-class Avatar {
-  constructor(game, look) {
+// ============================ a gambler's body =============================
+export class Avatar {
+  constructor(game, player) {
     this.game = game;
-    this.char = new Character(look, {});
+    this.player = player;
+    this.char = new Character(SEAT_LOOK[player.seat] || 'gambler', {});
     this.root = this.char.root;
     game.scene.add(this.root);
-    this.target = new THREE.Vector3(1.6, 0, 8);
+    this.target = new THREE.Vector3(1.6 * player.seat, 0, 8);
     this.root.position.copy(this.target);
     this.yaw = Math.PI; this.pitch = 0;
     this.speed = 0;
     this.gunId = null; this.gun = null;
     this.down = false; this.bled = false; this.hp = 100; this.maxHp = 100;
+    // things that float over them (and don't tip over when they do)
+    this.float = new THREE.Group();
+    game.scene.add(this.float);
     // a name tag you can see through walls, with their health under it
     const cv = document.createElement('canvas');
     cv.width = 256; cv.height = 72;
@@ -84,7 +117,27 @@ class Avatar {
     this.tag.scale.set(0.95, 0.27, 1);
     this.tag.position.y = 2.35;
     this.tag.renderOrder = 999;
-    this.root.add(this.tag);
+    this.float.add(this.tag);
+    // the revive marker: a red cross that shows through walls, the same size at any range
+    const rc = document.createElement('canvas');
+    rc.width = 128; rc.height = 160;
+    const c = rc.getContext('2d');
+    c.beginPath(); c.arc(64, 62, 54, 0, Math.PI * 2);
+    c.fillStyle = '#d0102a'; c.fill();
+    c.lineWidth = 8; c.strokeStyle = '#fff4e8'; c.stroke();
+    c.fillStyle = '#fff4e8';
+    c.fillRect(52, 28, 24, 68); c.fillRect(30, 50, 68, 24);
+    c.font = 'bold 30px Bahnschrift, "Segoe UI", sans-serif';
+    c.textAlign = 'center';
+    c.lineWidth = 7; c.strokeStyle = 'rgba(0,0,0,0.9)'; c.strokeText('REVIVE', 64, 150);
+    c.fillText('REVIVE', 64, 150);
+    this.reviveTex = new THREE.CanvasTexture(rc);
+    this.reviveTex.colorSpace = THREE.SRGBColorSpace;
+    this.reviveIcon = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.reviveTex, depthTest: false, depthWrite: false, transparent: true, sizeAttenuation: false }));
+    this.reviveIcon.renderOrder = 1000;
+    this.reviveIcon.position.y = 1.35;
+    this.reviveIcon.visible = false;
+    this.float.add(this.reviveIcon);
     this._tagKey = '';
     this._drawTag();
   }
@@ -107,18 +160,19 @@ class Avatar {
   }
 
   _drawTag() {
-    const key = `${Math.round(this.hp)}|${this.down}|${this.bled}`;
+    const P = this.player;
+    const key = `${P.name}|${Math.round(this.hp)}|${this.down}|${this.bled}|${this.down ? Math.ceil(P.downT) : 0}`;
     if (key === this._tagKey) return;
     this._tagKey = key;
     const c = this.tagCv.getContext('2d');
     c.clearRect(0, 0, 256, 72);
-    c.font = 'bold 30px Bahnschrift, "Segoe UI", sans-serif';
+    c.font = 'bold 28px Bahnschrift, "Segoe UI", sans-serif';
     c.textAlign = 'center';
     c.lineWidth = 6; c.strokeStyle = 'rgba(0,0,0,0.85)';
-    const label = this.bled ? 'PARTNER — OUT' : this.down ? 'PARTNER — DOWN!' : 'PARTNER';
-    c.strokeText(label, 128, 30);
-    c.fillStyle = this.down || this.bled ? '#ff5a6a' : '#7ae8ff';
-    c.fillText(label, 128, 30);
+    const label = this.bled ? `${P.name} — OUT` : this.down ? `${P.name} — DOWN ${Math.ceil(P.downT)}s` : P.name;
+    c.strokeText(label, 128, 30, 250);
+    c.fillStyle = this.down || this.bled ? '#ff5a6a' : SEAT_COLOR[P.seat] || '#7ae8ff';
+    c.fillText(label, 128, 30, 250);
     c.fillStyle = 'rgba(0,0,0,0.7)'; c.fillRect(38, 44, 180, 14);
     c.fillStyle = this.down ? '#ff3a4a' : '#5dff9a';
     c.fillRect(40, 46, 176 * Math.max(0, Math.min(1, this.hp / this.maxHp)), 10);
@@ -147,6 +201,16 @@ class Avatar {
       B.upperArmL.rotation.set(-1.25 - this.pitch, -0.45, -0.1);
       B.foreArmL.rotation.set(-0.45, 0, 0);
     }
+    // the tag and the cross ride above them, upright
+    this.float.position.set(this.root.position.x, 0, this.root.position.z);
+    this.tag.position.y = floored ? 1.25 : 2.35;
+    this.reviveIcon.visible = this.down;
+    if (this.down) {
+      const urgent = this.player.downT < 10;
+      const s = 0.135 * (1 + 0.12 * Math.sin(performance.now() / (urgent ? 90 : 220)));
+      this.reviveIcon.scale.set(s, s * 1.25, 1);
+      this.reviveIcon.position.y = 1.85;
+    }
     this._drawTag();
   }
 
@@ -158,8 +222,10 @@ class Avatar {
 
   dispose() {
     this.game.scene.remove(this.root);
+    this.game.scene.remove(this.float);
     this.char.dispose();
     this.tagTex.dispose();
+    this.reviveTex.dispose();
   }
 }
 
@@ -206,6 +272,7 @@ class Puppet {
     this.lastCause = cause;
     this._lastHitHead = isHead;
     if (point) g.ui.floatText(point, Math.round(felt), strong ? 'dmg crit' : 'dmg');
+    g.stats.damage = (g.stats.damage || 0) + Math.max(0, Math.min(felt, this.hp));   // the scoreboard
     this.hp -= felt;
     if (this.hp <= 0) g.net.predictDeath(this);      // don't wait a round-trip to see them drop
   }
@@ -262,6 +329,7 @@ class BossPuppet extends Puppet {
     if (this.dead) return;
     const g = this.game;
     g.net.send({ t: 'hit', id: this.nid, d: r2(dmg), s: strong ? 1 : 0, c: 'hit', h: 0 });
+    g.stats.damage = (g.stats.damage || 0) + Math.max(0, Math.min(dmg * (this.flags & 1 ? 2 : 1), this.hp));
     this.hitFlash = 0.08;
     this.char.flinch(0.25);
     this._noFlinch = 0.15;
@@ -280,13 +348,15 @@ export class Net {
     this.game = game;
     this.role = null;           // 'host' | 'guest'
     this.peer = null;
-    this.conn = null;
+    this.conn = null;           // guest: the line to the host
+    this.links = new Map();     // host: seat -> the line to that guest
     this.code = null;
-    this.connected = false;
+    this.mySeat = 0;
+    this.welcomed = false;      // guest: the host gave us a seat
+    this.players = new Map();   // everyone else at the table: seat -> RemotePlayer
+    this.name = loadName();
     this.inRun = false;
     this.nextId = 1;
-    this.remote = new RemotePlayer(game);
-    this.avatar = null;
     this.events = [];
     this.sendT = 0;
     this.puppets = new Map();
@@ -295,16 +365,47 @@ export class Net {
     this.remoteRemaining = 0;
     this.pickMeshes = new Map();
     this.projMeshes = [];
-    this.guestReady = false; this.hostReady = false;
-    this.reviveT = 0;
-    this.partnerShots = 0;
-    this.ping = 0;            // round trip to your partner, ms (0 alone)
-    this._pingT = 0;
+    this.hostReady = false;
+    this.guestReadySent = false;
+    this.reviveT = 0;           // how long you've held E over someone
+    this.reviving = null;       // …and who
+    this.ping = 0;              // guest: round trip to the host, ms (0 alone, 0 hosting)
   }
 
+  /** once a second, on a timer (it keeps beating while the window is hidden and
+      the game isn't drawing): a ping to measure the line, and a check for lines
+      that have gone quiet for good (a crashed or killed game) */
+  _startBeat() {
+    clearInterval(this._beat);
+    this._beat = setInterval(() => {
+      if (!this.role) return;
+      const now = performance.now();
+      this.send({ t: 'pi', ts: now });
+      if (this.role === 'host') {
+        for (const c of [...this.links.values()]) if (now - (c._last || now) > SILENT_DROP) { try { c.close(); } catch { /* gone */ } this._dropConn(c); }
+      } else if (this.welcomed && now - (this._hostLast || now) > SILENT_DROP) this._hostGone();
+    }, 1000);
+  }
+
+  get connected() { return this.role === 'host' ? this.links.size > 0 : !!(this.conn && this.conn.open && this.welcomed); }
   get active() { return this.connected && !!this.role; }
   get isHost() { return this.active && this.role === 'host'; }
   get isGuest() { return this.active && this.role === 'guest'; }
+  remotes() { return [...this.players.values()]; }
+  /** the other gamblers the horde can still hurt */
+  aliveRemotes() { return this.remotes().filter((r) => r.alive); }
+  /** host: a kill another seat should be paid for */
+  creditedElsewhere(z) { return this.isHost && (z.lastHitBy ?? 0) !== 0 && this.links.has(z.lastHitBy); }
+  nameOf(seat) { return seat === this.mySeat ? this.name : this.players.get(seat)?.name || `PLAYER ${seat + 1}`; }
+
+  setName(n) {
+    const v = cleanName(n);
+    if (!v) return;
+    this.name = v;
+    try { localStorage.setItem(NAME_KEY, v); } catch { /* private mode */ }
+    if (this.role === 'host') this._rosterOut();
+    else if (this.role === 'guest' && this.conn?.open) this.send({ t: 'name', name: v });
+  }
 
   // --------------------------------- lobby -----------------------------------
   _status(text, cls = '') {
@@ -317,9 +418,30 @@ export class Net {
     return new window.Peer(id, { debug: 0 });
   }
 
+  /** the four seats in the lobby: who's sitting where */
+  renderSeats() {
+    const el = $('coop-seats');
+    if (!el) return;
+    // seated at a table: the host / join controls step aside
+    const panel = $('coop-panel');
+    if (this.role) panel.dataset.role = this.role; else delete panel.dataset.role;
+    if (!this.role) { el.innerHTML = ''; return; }
+    const rows = [];
+    for (let s = 0; s < MAX_PLAYERS; s++) {
+      const here = s === this.mySeat || this.players.has(s);
+      const name = here ? this.nameOf(s) : 'an empty seat';
+      rows.push(`<div class="seat${here ? '' : ' empty'}${s === this.mySeat ? ' me' : ''}" style="--c:${SEAT_COLOR[s]}"><b>${s + 1}</b><span>${esc(name)}</span>`
+        + `${s === 0 ? '<em>HOST</em>' : ''}${s === this.mySeat ? '<em>YOU</em>' : ''}</div>`);
+    }
+    el.innerHTML = rows.join('');
+    $('btn-coop-start')?.classList.toggle('hidden', !(this.role === 'host' && this.links.size > 0 && !this.inRun));
+  }
+
   host() {
     this.leave(true);
     this.role = 'host';
+    this.mySeat = 0;
+    this._startBeat();
     this.code = Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
     this._status('Opening a table…');
     const peer = this.peer = this._newPeer(PREFIX + this.code.toLowerCase());
@@ -327,13 +449,66 @@ export class Net {
     peer.on('open', () => {
       $('coop-code').textContent = this.code;
       $('coop-code-wrap').classList.remove('hidden');
-      this._status('Send your friend this code. Waiting for them to sit down…');
+      this._status(`Send your friends this code — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`);
+      this.renderSeats();
     });
     peer.on('connection', (conn) => {
-      if (this.conn) { conn.on('open', () => { conn.send({ t: 'full' }); setTimeout(() => conn.close(), 300); }); return; }
-      this._wire(conn);
+      conn.on('data', (m) => { try { this._hostData(conn, m); } catch (err) { console.error('[net]', err); } });
+      conn.on('close', () => this._dropConn(conn));
+      conn.on('error', () => this._dropConn(conn));
     });
     peer.on('error', (e) => this._peerError(e));
+  }
+
+  /** host: a message on one of the guest lines */
+  _hostData(conn, m) {
+    conn._last = performance.now();
+    if (m.t === 'hello') {
+      if (conn._seat != null) return;
+      const refuse = (why) => { try { conn.send({ t: 'full', why }); } catch { /* gone */ } setTimeout(() => conn.close(), 400); };
+      if (m.v !== PROTO) { refuse('version'); return; }
+      if (this.inRun) { refuse('run'); return; }
+      let seat = 1;
+      while (this.links.has(seat)) seat++;
+      if (seat >= MAX_PLAYERS) { refuse('full'); return; }
+      conn._seat = seat;
+      this.links.set(seat, conn);
+      this.players.set(seat, new RemotePlayer(this.game, seat, cleanName(m.name) || `PLAYER ${seat + 1}`));
+      conn.send({ t: 'welcome', seat });
+      this._rosterOut();
+      this._status(`${this.players.get(seat).name} sat down at seat ${seat + 1}. Deal when everyone's in.`, 'good');
+      Audio.play('chip');
+      return;
+    }
+    if (conn._seat == null) return;
+    this._onMsg(m, conn._seat);
+  }
+
+  /** host: everyone's seat and name, to everyone */
+  _rosterOut() {
+    const list = [{ seat: 0, name: this.name }, ...this.remotes().map((r) => ({ seat: r.seat, name: r.name }))];
+    this.send({ t: 'roster', list });
+    this.renderSeats();
+    this.game.ui.renderScoreboard?.();
+  }
+
+  /** guest: the host's list of who's at the table */
+  _syncRoster(list) {
+    const seats = new Set();
+    for (const { seat, name } of list) {
+      if (seat === this.mySeat) continue;
+      seats.add(seat);
+      const r = this.players.get(seat);
+      if (r) r.name = name;
+      else {
+        const nr = new RemotePlayer(this.game, seat, name);
+        this.players.set(seat, nr);
+        if (this.inRun) nr.avatar = new Avatar(this.game, nr);
+      }
+    }
+    for (const [seat, r] of this.players) if (!seats.has(seat)) { r.dispose(); this.players.delete(seat); }
+    this.renderSeats();
+    if (this.inRun) this._buildHud();
   }
 
   join(code) {
@@ -342,13 +517,19 @@ export class Net {
     this.leave(true);
     this.role = 'guest';
     this.code = code;
+    this._hostLast = 0;
+    this._startBeat();
     this._status(`Looking for table ${code}…`);
     const peer = this.peer = this._newPeer(undefined);
     if (!peer) return;
     peer.on('open', () => {
       const conn = peer.connect(PREFIX + code.toLowerCase(), { serialization: 'json', reliable: true });
-      this._wire(conn);
-      setTimeout(() => { if (!this.connected && this.role === 'guest') this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
+      this.conn = conn;
+      conn.on('open', () => { conn.send({ t: 'hello', v: PROTO, name: this.name }); this._status('Knocking…'); });
+      conn.on('data', (m) => { this._hostLast = performance.now(); try { this._onMsg(m, 0); } catch (err) { console.error('[net]', err); } });
+      conn.on('close', () => this._hostGone());
+      conn.on('error', () => this._hostGone());
+      setTimeout(() => { if (!this.welcomed && this.role === 'guest') this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
     });
     peer.on('error', (e) => this._peerError(e));
   }
@@ -360,80 +541,113 @@ export class Net {
     else if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') this._status("Can't reach the matchmaking server — check your internet connection.", 'bad');
     else if (t === 'browser-incompatible') this._status('This browser can’t do co-op (no WebRTC). Try Edge or Chrome.', 'bad');
     else this._status(`Connection trouble (${t || 'unknown'}). Try again.`, 'bad');
-    if (!this.connected) { this.peer?.destroy(); this.peer = null; this.role = null; }
+    if (!this.connected) { this.peer?.destroy(); this.peer = null; this.role = null; this.renderSeats(); }
   }
 
-  _wire(conn) {
-    this.conn = conn;
-    conn.on('open', () => {
-      this.connected = true;
-      this.send({ t: 'hello', v: PROTO });
-      if (this.role === 'host') {
-        this._status('Your friend is at the table!', 'good');
-        $('btn-coop-start').classList.remove('hidden');
-      } else this._status('Seated! Waiting for the host to deal you in…', 'good');
-      Audio.play('chip');
-    });
-    conn.on('data', (m) => { try { this._onMsg(m); } catch (err) { console.error('[net]', err); } });
-    conn.on('close', () => this._lost());
-    conn.on('error', () => this._lost());
-  }
-
+  /** guest → host; host → every guest */
   send(m) {
-    if (this.conn && this.conn.open) { try { this.conn.send(m); } catch { /* closing */ } }
+    if (this.role === 'host') { for (const c of this.links.values()) this._put(c, m); }
+    else if (this.conn) this._put(this.conn, m);
   }
+  /** to one seat (a guest reaching another guest goes through the host) */
+  sendTo(seat, m) {
+    if (this.role === 'host') { const c = this.links.get(seat); if (c) this._put(c, m); }
+    else if (seat === 0) this.send(m);
+    else this.send({ t: 'relay', to: seat, m });
+  }
+  /** host: to every guest but one */
+  _broadcast(m, except) {
+    for (const [seat, c] of this.links) if (seat !== except) this._put(c, m);
+  }
+  _put(c, m) { if (c && c.open) { try { c.send(m); } catch { /* closing */ } } }
 
   /** walk away from the table */
   leave(quiet = false) {
     const had = this.connected;
-    this.connected = false;
+    clearInterval(this._beat);
     this.inRun = false;
+    for (const c of this.links.values()) { try { c.close(); } catch { /* gone */ } }
     try { this.conn?.close(); } catch { /* gone */ }
     try { this.peer?.destroy(); } catch { /* gone */ }
+    this.links.clear();
     this.conn = null; this.peer = null; this.role = null;
+    this.welcomed = false;
+    this.mySeat = 0;
     this.ping = 0;
     this._clearWorld();
+    for (const r of this.players.values()) r.dispose();
+    this.players.clear();
     if (!quiet && had) this._status('Left the table.');
     $('btn-coop-start')?.classList.add('hidden');
     $('coop-code-wrap')?.classList.add('hidden');
     $('coop-hud')?.classList.add('hidden');
     $('coop-down')?.classList.add('hidden');
+    this.renderSeats();
   }
 
-  _lost() {
-    if (!this.connected) return;
+  /** host: a guest's line closed */
+  _dropConn(conn) {
+    const seat = conn._seat;
+    if (seat == null || this.links.get(seat) !== conn) return;
     const g = this.game;
-    const wasGuest = this.role === 'guest';
+    const r = this.players.get(seat);
+    const name = r?.name || `PLAYER ${seat + 1}`;
+    this.links.delete(seat);
+    r?.dispose();
+    this.players.delete(seat);
+    this.send({ t: 'left', seat, name });
+    this._rosterOut();
+    if (!this.inRun) { this._status(`${name} left the table.`, 'bad'); return; }
+    if (this.links.size === 0) {
+      // nobody left: the host plays on alone — unless they were lying on the carpet waiting for a hand
+      this.leave(true);
+      this._status('Everyone left the table.', 'bad');
+      if (!g.player.alive) { g.onPlayerDeath(this.downCause || 'the horde'); return; }
+      g.ui.banner('EVERYONE LEFT THE TABLE — YOU PLAY ON ALONE', 'red', 4000);
+      if (g.state === 'INTERMISSION' && this.hostReady) g.casino.startNextRound();
+      return;
+    }
+    g.ui.banner(`${name} LEFT THE TABLE`, 'red', 3000);
+    this._buildHud();
+    this._checkReady();
+  }
+
+  /** guest: the host's line closed */
+  _hostGone() {
+    if (this.role !== 'guest') return;
+    const g = this.game;
     const midRun = this.inRun;
+    const wasSeated = this.welcomed;
     this.leave(true);
-    this._status('Your friend left the table.', 'bad');
+    this._status(wasSeated ? 'The host closed the table.' : 'Couldn’t sit down at that table.', 'bad');
     if (!midRun) return;
-    // the host plays on alone — unless they were lying on the carpet waiting for a hand
-    if (!wasGuest && !g.player.alive) { g.onPlayerDeath(this.downCause || 'the horde'); return; }
-    g.ui.banner(wasGuest ? 'THE HOST LEFT — THE TABLE IS CLOSED' : 'YOUR PARTNER LEFT THE TABLE — YOU PLAY ON ALONE', 'red', 4000);
-    if (wasGuest) setTimeout(() => g.backToMenu?.(), 2500);
-    else if (g.state === 'INTERMISSION' && this.hostReady) g.casino.startNextRound();
+    g.ui.banner('THE HOST LEFT — THE TABLE IS CLOSED', 'red', 4000);
+    setTimeout(() => g.backToMenu?.(), 2500);
   }
 
   // --------------------------------- runs ------------------------------------
-  /** host: deal both of you in */
+  /** host: deal everybody in */
   startRun() {
     if (!this.isHost) return;
-    const seed = this.game.coatCheck.seed() || randomSeed();   // both of you get the host's deal
+    const seed = this.game.coatCheck.seed() || randomSeed();   // one seed; each seat gets its own slice of it
     this.send({ t: 'start', seed });
     this.game.coopNewRun(seed);
   }
 
-  /** both sides, at the start of a co-op run */
+  /** everyone, at the start of a co-op run */
   resetRun() {
     this.inRun = true;
     this._clearWorld();
-    this.remote.reset();
-    this.avatar = new Avatar(this.game, this.role === 'host' ? 'gambler2' : 'gambler');
+    for (const r of this.players.values()) {
+      r.reset();
+      r.stats = { kills: 0, deaths: 0, damage: 0, chips: 0 };
+      r.avatar = new Avatar(this.game, r);
+    }
     this.events = [];
-    this.guestReady = false; this.hostReady = false;
-    this.reviveT = 0;
-    this.partnerShots = 0;
+    this.resetReady();
+    this.reviveT = 0; this.reviving = null;
+    this.renderSeats();
+    this._buildHud();
     $('coop-hud').classList.remove('hidden');
   }
 
@@ -450,7 +664,7 @@ export class Net {
     this.pickMeshes.clear();
     for (const m of this.projMeshes) g.scene.remove(m);
     this.projMeshes = [];
-    if (this.avatar) { this.avatar.dispose(); this.avatar = null; }
+    for (const r of this.players.values()) if (r.avatar) { r.avatar.dispose(); r.avatar = null; }
   }
 
   /** guest: a new round — clear what's left of the last one */
@@ -464,7 +678,7 @@ export class Net {
   }
 
   // ----------------------------- host hooks ----------------------------------
-  /** host: every anim a zombie plays is mirrored on the guest's puppet */
+  /** host: every anim a zombie plays is mirrored on the guests' puppets */
   hookChar(o) {
     const c = o.char;
     for (const fn of ['attack', 'slip', 'daze', 'die', 'rise', 'flinch']) {
@@ -476,8 +690,8 @@ export class Net {
   /** host: who gets paid for this kill */
   creditKill(z, amt) {
     const g = this.game;
-    if (this.isHost && z.lastHitBy === 'guest') {
-      this.send({ t: 'credit', a: amt, x: r2(z.mesh.position.x), z: r2(z.mesh.position.z), k: z.kind, c: z.lastCause || 'hit' });
+    if (this.creditedElsewhere(z)) {
+      this.sendTo(z.lastHitBy, { t: 'credit', a: amt, x: r2(z.mesh.position.x), z: r2(z.mesh.position.z), k: z.kind, c: z.lastCause || 'hit' });
     } else g.awardChips(amt, z.mesh.position);
   }
 
@@ -486,21 +700,36 @@ export class Net {
   }
 
   // --------------------------- intermission sync -----------------------------
-  /** casino.startNextRound asks: may we go? (co-op waits for both gamblers) */
+  resetReady() {
+    this.hostReady = false;
+    this.guestReadySent = false;
+    for (const r of this.players.values()) r.ready = false;
+  }
+
+  /** casino.startNextRound asks: may we go? (co-op waits for every gambler) */
   readyToGo(casino) {
     const g = this.game;
     if (this.isGuest) {
       if (!this.guestReadySent) { this.guestReadySent = true; this.send({ t: 'ready' }); }
       casino.timerRunning = false;
       g.ui.hideAllPanels();
-      g.ui.prompt('Waiting for your partner to finish at the tables…', 600000);
+      g.ui.prompt('Waiting for everyone to finish at the tables…', 600000);
       return false;
     }
     this.hostReady = true;
-    if (this.guestReady || casino.timer <= 0) { this.hostReady = false; this.guestReady = false; return true; }
+    const waiting = this.remotes().filter((r) => !r.ready);
+    if (!waiting.length || casino.timer <= 0) { this.resetReady(); return true; }
     g.ui.hideAllPanels();
-    g.ui.prompt(`Waiting for your partner… (the doors open anyway in ${Math.max(0, Math.ceil(casino.timer))}s)`, 600000);
+    g.ui.prompt(`Waiting for ${waiting.map((r) => r.name).join(', ')}… (the doors open anyway in ${Math.max(0, Math.ceil(casino.timer))}s)`, 600000);
     return false;
+  }
+
+  /** host: someone got up from the tables — are we all set? */
+  _checkReady() {
+    const g = this.game;
+    if (!this.isHost || g.state !== 'INTERMISSION') return;
+    if (this.hostReady && this.remotes().every((r) => r.ready)) g.casino.startNextRound();
+    else if (this.hostReady) this.readyToGo(g.casino);
   }
 
   // ------------------------------ down + revive ------------------------------
@@ -511,23 +740,39 @@ export class Net {
     p.downed = true;
     p.downT = BLEED_TIME;
     p.hp = 0;
+    g.stats.deaths = (g.stats.deaths || 0) + 1;
     this.downCause = cause;
     g.weapons.reloading = false;
     Audio.play('boss_phase');
-    g.ui.banner("YOU'RE DOWN — YOUR PARTNER CAN DEAL YOU BACK IN", 'red', 3000);
+    g.ui.banner("YOU'RE DOWN — A TEAMMATE CAN HOLD E ON YOU TO DEAL YOU BACK IN", 'red', 3200);
     this._sendState();
   }
 
-  /** your partner picked you up */
-  _revived() {
+  /** somebody picked you up */
+  _revived(bySeat) {
     const g = this.game, p = g.player;
     if (!p.downed) return;
     p.downed = false;
     p.hp = Math.round(p.maxHp * 0.5);
     p.iFrames = 2;
-    g.ui.banner('BACK ON YOUR FEET', 'green', 1800);
+    g.ui.banner(`${this.nameOf(bySeat)} DEALT YOU BACK IN`, 'green', 2000);
     Audio.play('revive');
     this._sendState();
+  }
+
+  /** the downed teammate you're standing over, if any */
+  reviveCandidate() {
+    const g = this.game, p = g.player;
+    if (!this.active || !this.inRun || !p.alive) return null;
+    let best = null, bd = REVIVE_RANGE;
+    const now = performance.now();
+    for (const r of this.players.values()) {
+      if (!r.down || !r.avatar || now - r.reviveSent < 1500) continue;
+      const a = r.avatar.root.position;
+      const d = Math.hypot(a.x - p.pos.x, a.z - p.pos.z);
+      if (d < bd) { bd = d; best = r; }
+    }
+    return best;
   }
 
   /** the round's over: anyone down or out comes back */
@@ -541,17 +786,13 @@ export class Net {
 
   /** host: is everybody down? */
   wiped() {
-    const p = this.game.player;
-    return !p.alive && !this.remote.alive && this.remote.seen;
+    const seen = this.remotes().filter((r) => r.seen);
+    return !this.game.player.alive && seen.length > 0 && seen.every((r) => !r.alive);
   }
 
   // --------------------------------- ticking ---------------------------------
   update(dt) {
     // ping: once a second, stamp a message and time it coming back
-    if (this.connected) {
-      this._pingT -= dt;
-      if (this._pingT <= 0) { this._pingT = 1; this.send({ t: 'pi', ts: performance.now() }); }
-    }
     if (!this.active || !this.inRun) return;
     const g = this.game;
     const inPlay = g.state === 'COMBAT' || g.state === 'COUNTDOWN' || (g.state === 'PAUSED' && (g._stateBeforePause === 'COMBAT' || g._stateBeforePause === 'COUNTDOWN'));
@@ -561,22 +802,28 @@ export class Net {
       p.downT -= dt;
       if (p.downT <= 0) {
         p.downed = false; p.bledOut = true;
-        g.ui.banner('YOU BLED OUT — BACK NEXT ROUND IF YOUR PARTNER HOLDS ON', 'red', 3500);
+        g.ui.banner('YOU BLED OUT — BACK NEXT ROUND IF THE TABLE HOLDS ON', 'red', 3500);
         this._sendState();
       }
     }
-    // reviving the partner: stand over them and hold E
-    const av = this.avatar;
-    if (av && av.down && p.alive && inPlay && g.state !== 'PAUSED') {
-      const d = Math.hypot(av.root.position.x - p.pos.x, av.root.position.z - p.pos.z);
-      if (d < 2.2) {
-        if (p.keys['KeyE']) {
-          this.reviveT += dt * (g.perkFx?.reload ? 1 / g.perkFx.reload : 1);
-          if (this.reviveT >= REVIVE_TIME) { this.reviveT = 0; this.send({ t: 'revive' }); Audio.play('revive'); g.ui.banner('YOU DEALT YOUR PARTNER BACK IN', 'green', 1800); g.progress?.bump('revives'); g.progress?.gainXp(15, 'Teamwork'); }
-        } else this.reviveT = 0;
-        g.ui.interactPrompt({ title: this.reviveT > 0 ? `REVIVING… ${Math.round(this.reviveT / REVIVE_TIME * 100)}%` : 'REVIVE YOUR PARTNER', sub: 'Hold E', cost: null, action: 'HOLD', icon: '✚', color: '#5dff9a' });
-      } else this.reviveT = 0;
-    } else this.reviveT = 0;
+    // reviving: stand over a downed teammate and hold E (game.js shows the prompt)
+    const rv = inPlay && g.state !== 'PAUSED' ? this.reviveCandidate() : null;
+    if (rv && p.keys.KeyE) {
+      // real seconds, so a slow machine doesn't make it a longer hold (a hitch counts at most a quarter second)
+      const now = performance.now();
+      if (this.reviving !== rv) { this.reviving = rv; this.reviveT = 0; this._reviveAt = now; }
+      this.reviveT += Math.min(0.25, (now - this._reviveAt) / 1000) * (g.perkFx?.reload ? 1 / g.perkFx.reload : 1);
+      this._reviveAt = now;
+      if (this.reviveT >= REVIVE_TIME) {
+        this.sendTo(rv.seat, { t: 'revive', from: this.mySeat });
+        rv.reviveSent = performance.now();
+        this.reviveT = 0; this.reviving = null;
+        Audio.play('revive');
+        g.ui.banner(`YOU DEALT ${rv.name} BACK IN`, 'green', 1800);
+        g.progress?.bump('revives');
+        g.progress?.gainXp(15, 'Teamwork');
+      }
+    } else { this.reviveT = 0; this.reviving = null; }
 
     this.sendT -= dt;
     if (this.sendT <= 0) {
@@ -584,9 +831,11 @@ export class Net {
       this._sendState();
       if (this.isHost) this.send(this._snapshot());
     }
-    if (av) {
+    for (const r of this.players.values()) {
+      const av = r.avatar;
+      if (!av) continue;
+      av.hp = r.hp; av.maxHp = r.maxHp;
       av.update(dt);
-      av.hp = this.remote.hp; av.maxHp = this.remote.maxHp;
     }
     if (this.isGuest) this._animateRemote(dt);
     this._hud();
@@ -595,10 +844,55 @@ export class Net {
   _sendState() {
     const g = this.game, p = g.player, w = g.weapons.current;
     this.send({
-      t: 'ps', x: r2(p.pos.x), y: r2(p.pos.y), z: r2(p.pos.z), yaw: r2(p.yaw), pitch: r2(p.pitch),
+      t: 'ps', id: this.mySeat, x: r2(p.pos.x), y: r2(p.pos.y), z: r2(p.pos.z), yaw: r2(p.yaw), pitch: r2(p.pitch),
       gun: g.weapons.currentId, pk: w?.packed ? 1 : 0, hp: Math.round(p.hp), mhp: p.maxHp,
       dn: p.downed ? 1 : 0, bo: p.bledOut ? 1 : 0, dt: Math.ceil(p.downT || 0), sh: g.weapons.shotCount || 0, og: p.onGround ? 1 : 0,
+      // the scoreboard
+      nm: this.name, k: g.stats.kills, dd: g.stats.deaths || 0, dm: Math.round(g.stats.damage || 0), ch: g.chips, pg: Math.round(this.ping),
     });
+  }
+
+  /** a gambler's state, from their own game */
+  _applyState(r, m) {
+    const g = this.game;
+    r.pos.set(m.x, m.y, m.z); r.yaw = m.yaw; r.pitch = m.pitch;
+    r.onGround = !!m.og; r.hp = m.hp; r.maxHp = m.mhp;
+    r.down = !!m.dn; r.bled = !!m.bo; r.downT = m.dt; r.seen = true;
+    r.gun = m.gun; r.packed = !!m.pk;
+    if (m.nm) r.name = m.nm;
+    r.stats = { kills: m.k || 0, deaths: m.dd || 0, damage: m.dm || 0, chips: m.ch || 0 };
+    if (!this.isHost) r.ping = m.id === 0 ? 0 : (m.pg || 0);
+    const av = r.avatar;
+    if (!av) return;
+    av.target.set(m.x, 0, m.z);
+    av.yaw = m.yaw; av.pitch = m.pitch;
+    av.down = r.down; av.bled = r.bled;
+    av.setGun(m.gun, r.packed);
+    if (m.sh > r.shots && g.state !== 'INTERMISSION') {
+      const fx = GUNFX[m.gun];
+      if (fx?.sfx) g.audioAt(fx.sfx, av.root.position.clone().setY(1.4));
+      g.effects.spawnBurst?.(av.muzzle(), 0xffc060, 3, 2);
+    }
+    r.shots = m.sh;
+  }
+
+  /** the scoreboard's rows: you and everyone at the table, by seat */
+  scoreRows() {
+    const g = this.game, p = g.player;
+    const rows = [{
+      seat: this.mySeat, name: this.name, me: true,
+      ping: this.role === 'guest' ? Math.round(this.ping) : 0,
+      kills: g.stats.kills, deaths: g.stats.deaths || 0, damage: Math.round(g.stats.damage || 0), chips: g.chips,
+      state: p.bledOut ? 'OUT' : p.downed ? 'DOWN' : '',
+    }];
+    for (const r of this.players.values()) {
+      rows.push({
+        seat: r.seat, name: r.name, me: false, ping: Math.round(r.ping),
+        kills: r.stats.kills, deaths: r.stats.deaths, damage: r.stats.damage, chips: r.stats.chips,
+        state: r.bled ? 'OUT' : r.down ? 'DOWN' : '',
+      });
+    }
+    return rows.sort((a, b) => a.seat - b.seat);
   }
 
   _snapshot() {
@@ -620,94 +914,115 @@ export class Net {
     return { t: 'snap', z, b, pr, pk, ev: this.events.splice(0), rem: g.enemies.remaining() };
   }
 
-  // ------------------------------- messages ----------------------------------
   _find(id) {
     const g = this.game;
     return g.enemies.list.find((e) => e.nid === id) || g.bosses.find((e) => e.nid === id);
   }
 
-  _onMsg(m) {
+  // ------------------------------- messages ----------------------------------
+  /** from: the seat it came from (a guest only ever hears from the host, seat 0) */
+  _onMsg(m, from) {
     const g = this.game;
+    const host = this.role === 'host';
     switch (m.t) {
+      // ---- both ways ----
       case 'pi':
-        this.send({ t: 'po', ts: m.ts });
+        this.sendTo(from, { t: 'po', ts: m.ts });
         break;
       case 'po': {
         const rtt = Math.max(0, performance.now() - m.ts);
-        this.ping = this.ping ? this.ping * 0.7 + rtt * 0.3 : rtt;
+        const smooth = (v) => (v ? v * 0.7 + rtt * 0.3 : rtt);
+        if (host) { const r = this.players.get(from); if (r) r.ping = smooth(r.ping); }
+        else this.ping = smooth(this.ping);
         break;
       }
-      case 'hello':
-        if (m.v !== PROTO) { this._status('Your friend has a different version of the game — you both need the same build.', 'bad'); this.leave(true); }
-        break;
-      case 'full':
-        this._status('That table is full.', 'bad');
-        this.leave(true);
-        break;
-      case 'start':
-        if (this.role === 'guest') g.coopNewRun(m.seed || '');
+      case 'relay':                        // host: one guest to another (or to us)
+        if (!host) break;
+        if (m.to === 0) this._onMsg({ ...m.m, from }, from);
+        else this.sendTo(m.to, { ...m.m, from });
         break;
       case 'ps': {
-        const R = this.remote;
-        R.pos.set(m.x, m.y, m.z); R.yaw = m.yaw; R.pitch = m.pitch;
-        R.onGround = !!m.og; R.hp = m.hp; R.maxHp = m.mhp;
-        R.down = !!m.dn; R.bled = !!m.bo; R.downT = m.dt; R.seen = true;
-        R.gun = m.gun; R.packed = !!m.pk;
-        const av = this.avatar;
-        if (av) {
-          av.target.set(m.x, 0, m.z);
-          av.yaw = m.yaw; av.pitch = m.pitch;
-          av.down = R.down; av.bled = R.bled;
-          av.setGun(m.gun, R.packed);
-          if (m.sh > this.partnerShots && g.state !== 'INTERMISSION') {
-            const fx = GUNFX[m.gun];
-            if (fx?.sfx) g.audioAt(fx.sfx, av.root.position.clone().setY(1.4));
-            const mz = av.muzzle();
-            g.effects.spawnBurst?.(mz, 0xffc060, 3, 2);
-          }
-          this.partnerShots = m.sh;
-        }
+        const seat = host ? from : m.id;
+        const r = this.players.get(seat);
+        if (!r) break;
+        this._applyState(r, m);
+        if (host) this._broadcast({ ...m, id: seat }, seat);   // everyone else sees them too
         break;
       }
-      // ---- guest -> host: our shots and tricks on the horde ----
-      case 'hit': {
-        const e = this._find(m.id);
-        if (!e || e.dead) break;
-        e._byGuest = true;
-        e.takeDamage(m.d, !!m.s, null, m.c || 'hit', !!m.h);
-        e._byGuest = false;
+      case 'name': {
+        const r = host && this.players.get(from);
+        if (r) { r.name = cleanName(m.name) || r.name; this._rosterOut(); }
         break;
       }
-      case 'zfx': {
-        const e = this._find(m.id);
-        if (!e || e.dead) break;
-        e._byGuest = true;
-        if (m.f === 'knock') e.knockback(new THREE.Vector3(m.a[0], 0, m.a[1]), m.a[2]);
-        else if (typeof e[m.f] === 'function') e[m.f](...m.a);
-        e._byGuest = false;
-        break;
-      }
-      case 'lure':
-        g.enemies.lure = { pos: new THREE.Vector3(m.x, 0, m.z), radius: m.r, t: m.time };
-        break;
       case 'door':
-        if (!g.arena.isZoneOpen(m.zone)) { g.arena.openZone(m.zone); g.enemies.navT = 0; g.ui.banner(`YOUR PARTNER OPENED ${g.arena.doors.find((d) => d.zone === m.zone)?.def.name || 'A DOOR'}`, 'gold', 2200); }
+        if (!g.arena.isZoneOpen(m.zone)) {
+          g.arena.openZone(m.zone); g.enemies.navT = 0;
+          const who = this.nameOf(host ? from : (m.by ?? 0));
+          g.ui.banner(`${who} OPENED ${g.arena.doors.find((d) => d.zone === m.zone)?.def.name || 'A DOOR'}`, 'gold', 2200);
+        }
+        if (host) this._broadcast({ ...m, by: from }, from);
         break;
       case 'boom':
         g.enemies.boomFx(new THREE.Vector3(m.x, m.y, m.z), m.r, !!m.h);
-        break;
-      case 'ready':
-        this.guestReady = true;
-        if (this.hostReady && g.state === 'INTERMISSION') g.casino.startNextRound();
-        else if (g.state === 'INTERMISSION') g.ui.prompt('Your partner is ready for the next round', 2500);
+        if (host) this._broadcast(m, from);
         break;
       case 'revive':
-        this._revived();
+        this._revived(m.from ?? from);
         break;
       case 'banner':
         g.ui.banner(m.text, m.color, m.ms);
         break;
+      // ---- guest -> host: shots and tricks on the horde, tagged with the seat ----
+      case 'hit': {
+        const e = host && this._find(m.id);
+        if (!e || e.dead) break;
+        e._by = from;
+        e.takeDamage(m.d, !!m.s, null, m.c || 'hit', !!m.h);
+        e._by = null;
+        break;
+      }
+      case 'zfx': {
+        const e = host && this._find(m.id);
+        if (!e || e.dead) break;
+        e._by = from;
+        if (m.f === 'knock') e.knockback(new THREE.Vector3(m.a[0], 0, m.a[1]), m.a[2]);
+        else if (typeof e[m.f] === 'function') e[m.f](...m.a);
+        e._by = null;
+        break;
+      }
+      case 'lure':
+        if (host) g.enemies.lure = { pos: new THREE.Vector3(m.x, 0, m.z), radius: m.r, t: m.time };
+        break;
+      case 'ready': {
+        const r = host && this.players.get(from);
+        if (!r) break;
+        r.ready = true;
+        if (g.state === 'INTERMISSION' && !this.hostReady) g.ui.prompt(`${r.name} is ready for the next round`, 2500);
+        this._checkReady();
+        break;
+      }
       // ---- host -> guest ----
+      case 'welcome':
+        this.mySeat = m.seat;
+        this.welcomed = true;
+        this._status(`Seated at seat ${m.seat + 1}! Waiting for the host to deal you in…`, 'good');
+        Audio.play('chip');
+        this.renderSeats();
+        break;
+      case 'roster':
+        if (!host) this._syncRoster(m.list);
+        break;
+      case 'full':
+        this._status(m.why === 'version' ? 'That table runs a different version of the game — you all need the same build.'
+          : m.why === 'run' ? 'That table is in the middle of a game. Wait for it to finish.' : `That table is full (${MAX_PLAYERS} players).`, 'bad');
+        this.leave(true);
+        break;
+      case 'left':
+        if (!host && this.inRun) g.ui.banner(`${m.name} LEFT THE TABLE`, 'red', 3000);
+        break;
+      case 'start':
+        if (!host) g.coopNewRun(m.seed || '');
+        break;
       case 'snap':
         if (this.isGuest) this._applySnap(m);
         break;
@@ -886,15 +1201,27 @@ export class Net {
   }
 
   // ----------------------------------- HUD -----------------------------------
+  /** one row per teammate: name, health, and whether they need you */
+  _buildHud() {
+    const el = $('coop-hud');
+    if (!el) return;
+    el.innerHTML = this.remotes().sort((a, b) => a.seat - b.seat).map((r) =>
+      `<div class="coop-row" data-seat="${r.seat}" style="--c:${SEAT_COLOR[r.seat]}"><div class="coop-name"></div>`
+      + '<div class="bar bar-thin"><div class="fill fill-hp"></div></div><div class="coop-state dim small"></div></div>').join('');
+  }
+
   _hud() {
-    const g = this.game, R = this.remote, p = g.player;
-    const fill = $('coop-hp');
-    if (fill) fill.style.width = `${Math.max(0, Math.min(100, (R.hp / R.maxHp) * 100))}%`;
-    const st = $('coop-state');
-    if (st) {
-      const txt = !R.seen ? 'connecting…' : R.bled ? 'BLED OUT — back next round' : R.down ? `DOWN — ${R.downT}s — go pick them up!` : `${Math.round(R.hp)} HP`;
+    const g = this.game, p = g.player;
+    for (const row of document.querySelectorAll('#coop-hud .coop-row')) {
+      const r = this.players.get(parseInt(row.dataset.seat, 10));
+      if (!r) continue;
+      const nm = row.querySelector('.coop-name');
+      if (nm.textContent !== r.name) nm.textContent = r.name;
+      row.querySelector('.fill').style.width = `${Math.max(0, Math.min(100, (r.hp / r.maxHp) * 100))}%`;
+      const st = row.querySelector('.coop-state');
+      const txt = !r.seen ? 'connecting…' : r.bled ? 'BLED OUT — back next round' : r.down ? `DOWN — ${r.downT}s — hold E on them!` : `${Math.round(r.hp)} HP`;
       if (st.textContent !== txt) st.textContent = txt;
-      st.className = R.down || R.bled ? 'bad' : 'dim small';
+      row.classList.toggle('down', r.down || r.bled);
     }
     const dn = $('coop-down');
     const floored = p.downed || p.bledOut;
@@ -903,7 +1230,8 @@ export class Net {
       const txt = p.bledOut ? 'OUT FOR THE ROUND' : `YOU'RE DOWN — ${Math.max(0, Math.ceil(p.downT))}s`;
       const b = $('coop-down-t');
       if (b.textContent !== txt) b.textContent = txt;
-      $('coop-down-sub').textContent = p.bledOut ? 'Your partner has to clear the round' : 'Hang on — your partner can hold E on you to deal you back in';
+      $('coop-down-sub').textContent = p.bledOut ? 'The rest of the table has to clear the round'
+        : 'Hang on — a teammate can stand over you and hold E to deal you back in';
     }
   }
 }

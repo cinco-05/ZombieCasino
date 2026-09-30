@@ -100,7 +100,7 @@ export class Pickups {
     const g = this.game;
     if (g.net.isGuest) return;                  // net.js animates the host's pickups
     const ppos = g.player.pos;
-    const partner = g.net.isHost && g.net.remote.alive ? g.net.remote : null;
+    const mates = g.net.isHost ? g.net.aliveRemotes() : [];     // co-op: whoever walks over it
     const t = performance.now() / 1000;
     for (let i = this.list.length - 1; i >= 0; i--) {
       const p = this.list[i];
@@ -120,15 +120,15 @@ export class Pickups {
         const target = new THREE.Vector3(ppos.x, 0, ppos.z);
         p.mesh.position.lerp(target, Math.min(1, dt * Math.max(1, magnetR + 1 - d) * 2.2));
       }
-      const dR = partner ? p.mesh.position.distanceTo(new THREE.Vector3(partner.pos.x, 0, partner.pos.z)) : 1e9;
+      const mate = d < 1.2 ? null : mates.find((r) => Math.hypot(p.mesh.position.x - r.pos.x, p.mesh.position.z - r.pos.z) < 1.2);
       if (d < 1.2) {
         this._collect(p);
         this.list.splice(i, 1);
-      } else if (dR < 1.2) {
-        // the partner walked over it: it's theirs
+      } else if (mate) {
+        // a teammate walked over it: it's theirs
         this._remove(p);
         this.list.splice(i, 1);
-        g.net.send({ t: 'pick', kind: p.kind, amount: p.amount || 0, part: p.part || p.key || null });
+        g.net.sendTo(mate.seat, { t: 'pick', kind: p.kind, amount: p.amount || 0, part: p.part || p.key || null });
       } else if (p.t <= 0) {
         this._remove(p);
         this.list.splice(i, 1);

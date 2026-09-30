@@ -23,7 +23,7 @@ import { BigSix } from './bigsix.js';
 import { CoatCheck } from './coatcheck.js';
 import { Wonder } from './wonder.js';
 import { AllIn } from './allin.js';
-import { Net } from './net.js';
+import { Net, REVIVE_TIME } from './net.js';
 import { Rewards } from './rewards.js';
 import { Progress } from './progress.js';
 import { ZONES } from './arena.js';
@@ -190,7 +190,7 @@ export class Game {
   }
 
   _freshStats() {
-    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0 };
+    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, deaths: 0, damage: 0 };
   }
 
   _freshPlayerMods() {
@@ -251,23 +251,28 @@ export class Game {
   targetFor(e) {
     const p = this.player;
     if (!this.net.isHost) return p;
-    const r = this.net.remote;
-    if (!r.alive) return p;
-    if (!p.alive) return r;
+    const all = this.alivePlayers();
+    if (!all.length) return p;
+    if (all.length === 1) return all[0];
     const now = performance.now();
-    if (!e._tgt || now > (e._tgtUntil || 0)) {
+    if (!e._tgt || !all.includes(e._tgt) || now > (e._tgtUntil || 0)) {
       const pos = e.mesh.position;
-      const dp = Math.hypot(p.pos.x - pos.x, p.pos.z - pos.z), dr = Math.hypot(r.pos.x - pos.x, r.pos.z - pos.z);
-      e._tgt = dr < dp * 0.9 ? 'r' : 'p';
+      let best = null, bd = Infinity;
+      for (const q of all) {
+        // the one it's already after gets a 10% edge, so it doesn't flip-flop
+        const d = Math.hypot(q.pos.x - pos.x, q.pos.z - pos.z) * (q === e._tgt ? 0.9 : 1);
+        if (d < bd) { bd = d; best = q; }
+      }
+      e._tgt = best;
       e._tgtUntil = now + 600 + Math.random() * 400;
     }
-    return e._tgt === 'r' ? r : p;
+    return e._tgt;
   }
 
   /** every player the horde can still hurt */
   alivePlayers() {
     const out = this.player.alive ? [this.player] : [];
-    if (this.net.isHost && this.net.remote.alive) out.push(this.net.remote);
+    if (this.net.isHost) out.push(...this.net.aliveRemotes());
     return out;
   }
 
@@ -284,14 +289,14 @@ export class Game {
   /** both sides: a co-op run starts (the host deals; the guest waits for round 1) */
   coopNewRun(seed = '') {
     this.mode = 'coop';
-    Seed.begin(seed);                            // both of you are dealt from the host's seed
+    Seed.begin(seed, `#${this.net.mySeat}:`);    // one seed for the table, a different deal for each seat
     this.ui.hide('coop-panel');
     this.ui.hide('main-menu');
     this._resetRun(true, this.coatCheck.current());
     this.net.resetRun();
     this.progress.bump('coopRuns');
     if (this.net.isGuest) {
-      this.player.pos.x += 1.6;                  // don't stand in each other
+      this.player.pos.x += [0, 1.6, -1.6, 3.2][this.net.mySeat] || 0;   // don't stand in each other
       this.round = 0;
       this.setState('INTERMISSION');
     } else {
@@ -384,6 +389,18 @@ export class Game {
     if (!this._interactables) this._buildInteractables();
     if (!this.player.alive) { this.interactTarget = null; this.ui.interactPrompt(null); return; }
     if (this.weapons.drinkT > 0) { this.interactTarget = null; this.ui.interactPrompt(null); return; }
+    // co-op: a downed teammate at your feet comes before anything for sale
+    const rv = this.net.reviveCandidate();
+    if (rv) {
+      const pct = this.net.reviving === rv ? Math.min(1, this.net.reviveT / REVIVE_TIME) : 0;
+      this.interactTarget = { revive: rv };
+      this.ui.interactPrompt({
+        title: pct > 0 ? `REVIVING ${rv.name}…` : `REVIVE ${rv.name}`,
+        sub: pct > 0 ? 'Keep holding E' : `Hold E — they bleed out in ${Math.max(0, Math.ceil(rv.downT))}s`,
+        action: 'HOLD', icon: '✚', color: '#5dff9a', progress: pct,
+      });
+      return;
+    }
     const p = this.player.pos, fwd = this.player.forwardFlat();
     let best = null, bd = 1e9;
     for (const it of this._interactables) {
@@ -406,7 +423,7 @@ export class Game {
     if (this.state !== 'COMBAT' && this.state !== 'COUNTDOWN') return;
     if (!this.player.alive) return;
     const t = this.interactTarget;
-    if (!t) return;
+    if (!t || t.revive) return;                 // a revive is a hold, not a press (net.js times it)
     t.it.use();
     this._updateInteract();
   }
@@ -439,7 +456,8 @@ export class Game {
     if (now - c.t0 < 500) return;
     const fps = Math.round(c.n * 1000 / (now - c.t0));
     c.t0 = now; c.n = 0;
-    if (this.settings.showPerf) this.ui.updatePerf(fps, Math.round(this.net.ping), this.net.connected);
+    if (this.settings.showPerf) this.ui.updatePerf(fps, Math.round(this.net.ping), this.net.active ? this.net.role : 'solo');
+    this.ui.renderScoreboard();                 // (only does anything while TAB is held)
   }
 
   /** watch the frame rate in combat; step quality down once if it's struggling */
@@ -881,7 +899,7 @@ export class Game {
     else if (isBoss) bossKind = Seed.random('rounds') < 0.5 ? 'pitboss' : 'housedealer';   // endless
 
     if (this.net.isHost) {
-      this.net.hostReady = false; this.net.guestReady = false;
+      this.net.resetReady();
       const sp = this.specialRound;
       this.net.send({ t: 'begin', round: this.round, special: sp ? { name: sp.name, desc: sp.desc, chipMult: sp.chipMult } : null, lowLight: !!mods.lowLight, boss: bossKind });
     }
@@ -999,6 +1017,7 @@ export class Game {
     // the bosses hold grudges — die to one and it remembers next run
     if (cause === 'THE PIT BOSS') { this.grudge.pitboss++; this._saveGrudge(); }
     if (cause === 'THE HOUSE DEALER') { this.grudge.housedealer++; this._saveGrudge(); }
+    if (!this.net.active) this.stats.deaths++;
     this.setState('SUMMARY');
     Audio.setBossMode(false);
     this.arena.setRedAlert(false);

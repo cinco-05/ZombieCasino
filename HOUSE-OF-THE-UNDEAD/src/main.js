@@ -36,9 +36,11 @@ window.HOTU = game; // handy for console poking
 const coopClass = () => { const c = game.coatCheck.current(); $('coop-class').textContent = `Your class: ${c.name || 'the house pick'}`; };
 game.refreshCoopClass = coopClass;
 $('btn-coop-class').onclick = () => { game.ui.hide('coop-panel'); game.coatCheck.open(); };
-$('btn-coop').onclick = () => { Audio.init(); game.ui.hide('main-menu'); coopClass(); game.ui.show('coop-panel'); };
-$('btn-coop-host').onclick = () => { Audio.init(); game.net.host(); };
-$('btn-coop-join').onclick = () => { Audio.init(); game.net.join($('coop-join-code').value); };
+$('btn-coop').onclick = () => { Audio.init(); game.ui.hide('main-menu'); coopClass(); $('coop-name').value = game.net.name; game.net.renderSeats(); game.ui.show('coop-panel'); };
+$('coop-name').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
+$('coop-name').addEventListener('change', (e) => { game.net.setName(e.target.value); e.target.value = game.net.name; });
+$('btn-coop-host').onclick = () => { Audio.init(); game.net.setName($('coop-name').value); game.net.host(); };
+$('btn-coop-join').onclick = () => { Audio.init(); game.net.setName($('coop-name').value); game.net.join($('coop-join-code').value); };
 $('coop-join-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btn-coop-join').click(); });
 $('coop-join-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
 $('btn-coop-copy').onclick = () => { navigator.clipboard?.writeText(game.net.code || '').then(() => { $('btn-coop-copy').textContent = 'COPIED'; setTimeout(() => { $('btn-coop-copy').textContent = 'COPY'; }, 1500); }).catch(() => {}); };
@@ -96,6 +98,8 @@ document.addEventListener('wheel', (e) => {
 document.addEventListener('keydown', (e) => {
   // typing a class name at the Coat Check shouldn't fire off grenades
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  // hold TAB: the scoreboard
+  if (e.code === 'Tab') { e.preventDefault(); game.ui.scoreboard(true); return; }
   // at the tables: hit / stand / double / split, holds, spins and the slot arm
   if (!e.repeat && game.casino.key(e.code)) { e.preventDefault(); return; }
   game.player.keys[e.code] = true;
@@ -116,6 +120,7 @@ document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && document.pointerLockElement === canvas) e.preventDefault();
 });
 document.addEventListener('keyup', (e) => {
+  if (e.code === 'Tab') game.ui.scoreboard(false);
   game.player.keys[e.code] = false;
 });
 
@@ -125,5 +130,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', () => {
   for (const k of Object.keys(game.player.keys)) game.player.keys[k] = false;
+  game.ui.scoreboard(false);
   game.weapons.triggerHeld = false;
 });

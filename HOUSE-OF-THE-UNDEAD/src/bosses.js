@@ -41,8 +41,9 @@ class BossBase {
 
   takeDamage(dmg, strong, point) {
     if (this.dead) return;
-    this.lastHitBy = this._byGuest ? 'guest' : 'host';
+    this.lastHitBy = this._by ?? 0;
     if (this.vulnT > 0) dmg *= 2;           // dealer's open window
+    if (this._by == null) this.game.stats.damage += Math.max(0, Math.min(dmg, this.hp));
     this.hp -= dmg;
     this.hitFlash = 0.08;
     this.char.flinch(0.25);

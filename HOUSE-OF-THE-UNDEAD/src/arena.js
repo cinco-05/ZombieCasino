@@ -1201,7 +1201,8 @@ export class Arena {
   // ------------------------------ the nav grid --------------------------------
   _buildNav() {
     const nav = this.nav = new NavGrid(-64, 128);
-    this.nav2 = nav.fork();          // co-op: the field that leads to player 2
+    this.nav2 = nav.fork();          // co-op: the fields that lead to players 2, 3 and 4
+    this.navs = [this.nav2, nav.fork(), nav.fork()];
     ZONES.forEach((z, i) => {
       nav.markZone(i, ...z.rect);
       if (z.gap) nav.markZone(i, ...z.gap);
@@ -1235,6 +1236,8 @@ export class Arena {
   }
 
   isZoneOpen(i) { return this.nav.zoneOpen[i] === 1; }
+  /** the flow field that leads the horde to a co-op seat (1–3) */
+  navFor(seat) { return this.navs[seat - 1] || this.nav2; }
   walkable(x, z) { return this.nav.walkableAt(x, z); }
   ceilAt(x, z) { return ZONES[this.zoneAtRaw(x, z)].ceil; }
 
