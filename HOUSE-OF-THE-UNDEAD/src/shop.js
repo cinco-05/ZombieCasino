@@ -6,10 +6,15 @@
 
 import { CONFIG } from './config.js';
 import { GUNS, LETHALS, TACTICALS } from './catalog.js';
+import { gunBars } from './coatcheck.js';
+import { Seed } from './rng.js';
+
+// every shelf is dealt from the run's seed
+const R = () => Seed.random('shop');
 
 export const TABLE_GAMES = {
-  blackjack: { name: 'BLACKJACK', icon: '♠', blurb: 'Beat the dealer to 21. A natural pays a tier higher.' },
-  roulette: { name: 'ROULETTE', icon: '◉', blurb: 'Color, half or one number. A straight-up hit pays a tier up.' },
+  blackjack: { name: 'BLACKJACK', icon: '♠', blurb: 'Beat the dealer to 21. Split pairs, double down. A natural pays a tier higher.' },
+  roulette: { name: 'ROULETTE', icon: '◉', blurb: 'Put your chip on a color, a half or one number. A straight-up hit pays a tier up.' },
   poker: { name: 'FIVE CARD DRAW', icon: '♣', blurb: 'One draw vs the dealer. A flush or better pays a tier up.' },
 };
 
@@ -33,10 +38,10 @@ const SPECIALS = {
 };
 
 const round5 = (n) => Math.max(5, Math.round(n / 5) * 5);
-const rnd = (a, b) => a + Math.random() * (b - a);
+const rnd = (a, b) => a + R() * (b - a);
 const weighted = (entries) => {
   const total = entries.reduce((s, [, w]) => s + w, 0);
-  let r = Math.random() * total;
+  let r = R() * total;
   for (const [k, w] of entries) { r -= w; if (r <= 0) return k; }
   return entries[0][0];
 };
@@ -77,13 +82,13 @@ export class Shop {
   /** a lethal or tactical: usually a restock of what you carry, sometimes something new */
   _gearCard() {
     const g = this.game, p = g.player;
-    const slot = Math.random() < 0.5 ? 'lethal' : 'tactical';
+    const slot = R() < 0.5 ? 'lethal' : 'tactical';
     const table = slot === 'lethal' ? LETHALS : TACTICALS;
     const mine = slot === 'lethal' ? p.lethalId : p.tacticalId;
     const keys = Object.keys(table);
-    const key = Math.random() < 0.45 && mine ? mine : keys[Math.floor(Math.random() * keys.length)];
+    const key = R() < 0.45 && mine ? mine : keys[Math.floor(R() * keys.length)];
     const def = table[key];
-    const count = key === 'eye' ? 1 : Math.random() < 0.35 ? 2 : 1;
+    const count = key === 'eye' ? 1 : R() < 0.35 ? 2 : 1;
     const base = key === 'eye' ? [95, 140] : key === 'jackpot' ? [70, 110] : slot === 'lethal' ? [40, 70] : [35, 65];
     const range = [base[0] * (count === 2 ? 1.7 : 1), base[1] * (count === 2 ? 1.7 : 1)];
     return { kind: 'gear', slot, key, count, price: this._price(range, 0.6), swap: key !== mine, def };
@@ -92,7 +97,7 @@ export class Shop {
   _weaponCard() {
     const g = this.game;
     const pool = Object.keys(GUNS).filter((id) => !g.weapons.owns(id) && GUNS[id].cat !== 'wonder');
-    const id = pool[Math.floor(Math.random() * pool.length)];
+    const id = pool[Math.floor(R() * pool.length)];
     const special = GUNS[id].cat === 'special';
     return { kind: 'weapon', gun: id, price: this._price(special ? [280, 380] : [170, 250], 1.4) };
   }
@@ -101,7 +106,7 @@ export class Shop {
     const kind = weighted([['table', 0.36], ['slots', 0.08], ['supply', 0.2], ['gear', 0.18], ['special', 0.08], ['weapon', 0.06], ['upgrade', 0.04]]);
     if (kind === 'table') return this._tableCard();
     if (kind === 'slots') {
-      const pulls = Math.random() < 0.3 ? 5 : 3;
+      const pulls = R() < 0.3 ? 5 : 3;
       return { kind: 'slots', pulls, price: this._price(pulls === 5 ? [85, 130] : [50, 85], 0.6) };
     }
     if (kind === 'supply') {
@@ -118,7 +123,7 @@ export class Shop {
     // a straight-up attachment, no gamble — pricey, and not always there
     const pool = g.upgrades._attachmentCards('rare');
     if (!pool.length) return this._tableCard();
-    const up = pool[Math.floor(Math.random() * pool.length)];
+    const up = pool[Math.floor(R() * pool.length)];
     return { kind: 'upgrade', up, price: this._price([140, 220], 1.3) };
   }
 
@@ -129,7 +134,7 @@ export class Shop {
     for (let i = 0; i < this.slotCount; i++) cards.push(this._card());
     // the odd sale
     for (const c of cards) {
-      if (c.price > 0 && Math.random() < 0.16) { c.sale = true; c.price = round5(c.price * 0.7); }
+      if (c.price > 0 && R() < 0.16) { c.sale = true; c.price = round5(c.price * 0.7); }
     }
     // broke? the house extends one free hand, once per visit
     const cheapest = Math.min(...cards.map((c) => c.price));
@@ -159,8 +164,10 @@ export class Shop {
       };
     }
     if (c.kind === 'slots') {
+      const per = Math.round(c.price / c.pulls);
       return { type: 'SLOTS', badge: `${c.pulls} PULLS`, icon: '7', name: 'ONE-ARMED BANDIT',
-        desc: `${c.pulls} pulls on the 5×5 machine. Chips, heals and ammo — skulls sting, but can't kill you.` };
+        desc: `${c.pulls} pulls on LUCKY UNDEAD: sevens, BARs, cherries and wilds on five lines. Hearts heal, bells bring ammo.`,
+        terms: `<b>${per}</b> chips a pull · <b>7·7·7</b> pays ${per * 20} a line<br>Pays back ~110% on average` };
     }
     if (c.kind === 'supply') {
       const S = SUPPLIES[c.key];
@@ -182,12 +189,17 @@ export class Shop {
       const G = GUNS[c.gun];
       const w = this.game.weapons;
       const full = w.slots.slice(0, w.maxSlots).every(Boolean);
+      const bars = gunBars(c.gun).filter(([n]) => n !== 'RELOAD')
+        .map(([n, v]) => `<div class="co-bar"><span>${n}</span><i style="--v:${(v * 100).toFixed(0)}%"></i></div>`).join('');
       return {
-        type: G.cat === 'special' ? 'HOUSE SPECIAL' : 'WEAPON', badge: G.cat === 'special' ? 'RARE FIND' : '', icon: G.icon, name: G.name, desc: G.blurb,
-        terms: full ? `<b>Swaps for:</b> the ${w.current.def.name} in your hands` : '<b>Fills</b> your empty slot',
+        type: G.cat === 'special' ? 'HOUSE SPECIAL' : 'WEAPON', badge: G.cat === 'special' ? 'RARE FIND' : '', icon: G.icon, name: G.name,
+        desc: G.blurb,
+        terms: `<div class="co-bars sc-bars">${bars}</div>${full ? `<b>Swaps for:</b> the ${w.current.name} in your hands` : '<b>Fills</b> your empty slot'}`,
       };
     }
-    return { type: 'UPGRADE', badge: 'NO GAMBLE', icon: '✦', name: c.up.title, desc: `${c.up.sub}: ${c.up.desc}` };
+    // a straight-up attachment: show exactly what it does to that gun
+    const rows = c.up.stats().map((s) => `<b>${s.label}</b> ${s.fmt(s.from)} → ${s.fmt(s.to)}${s.unit || ''}`).join('<br>');
+    return { type: 'UPGRADE', badge: 'NO GAMBLE', icon: c.up.icon || '✦', name: c.up.title, desc: `On the <b>${c.up.sub}</b>: ${c.up.desc}`, terms: rows };
   }
 
   render(el, onBuy) {

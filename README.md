@@ -39,22 +39,23 @@ Then open `http://localhost:8000`.
 * Esc: Pause
 * F11: Fullscreen
 * F3: Debug panel
+* At the tables: H / S / D / P (hit, stand, double, split), 1–5 and Space (poker), Space and 1–3 (slots)
 
 ## Main Features
 
-* 10-round campaign, endless mode, and a daily seeded run
+* 10-round campaign and endless mode. Every run is dealt from a seed, and you can type one in to replay it
 * Boss fights: The Pit Boss on round 5 and The House Dealer on round 10
 * 11 guns, including the Lady Luck wonder weapon, built from three parts won at the tables
 * ALL IN, the casino's own pack-a-punch
 * 12 enemy types, elites and the Golden Gambler
 * Create-a-class at the Coat Check, with lethals, tacticals and vices
-* A Balatro-style shop between rounds with blackjack, roulette, five-card draw and slots. Losing a wager adds penalties to the next round
+* A Balatro-style shop between rounds. Its blackjack (with splits), roulette and five-card draw are played on 3D felt, and LUCKY UNDEAD is a three-reel slot machine that pays back more than it takes. Losing a wager adds penalties to the next round
 * Cocktail perks, paid doors to new wings, and the Big Six money wheel
 * Streaks, a progressive jackpot, and comps in five rarities
 * Permanent progression: the Vault, Loyalty Card tiers, Markers, and collectible chips
-* Online co-op with a friend by room code
+* Online co-op with a friend by room code, with an FPS and ping readout in the corner (ping reads 0 when you play alone)
 * Three art styles: 1930s Cartoon, 1930s Black & White, and Modern
-* Procedural music and 3D audio
+* A procedural jazz band playing three tunes in rotation, and 3D audio
 * Mid-run saves and local records
 * No internet needed after loading, except for co-op
 

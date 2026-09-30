@@ -7,6 +7,7 @@
 import { CONFIG } from './config.js';
 import { Audio } from './audio.js';
 import { GUNS, LETHALS, TACTICALS, VICES, DEFAULT_CLASSES } from './catalog.js';
+import { normalizeSeed, randomSeed } from './rng.js';
 
 const $ = (id) => document.getElementById(id);
 const KEY = 'hotu_classes_v1';
@@ -19,8 +20,8 @@ const SLOTS = [
 ];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/** 0..1 bars so guns can be compared at a glance */
-function gunBars(id) {
+/** 0..1 bars so guns can be compared at a glance (the shop's gun cards use them too) */
+export function gunBars(id) {
   const d = CONFIG.weapons[id];
   const per = d.fire === 'cork' ? d.damage * 1.6 : d.damage * d.pellets * (d.pierce ? 1 + (d.pierce - 1) * 0.3 : 1);
   const dps = per * d.fireRate;
@@ -72,11 +73,18 @@ export class CoatCheck {
   }
 
   // --------------------------------- screen -----------------------------------
-  open() {
+  /** focusSeed: came in through PLAY A SEED — put the cursor in the seed box */
+  open(focusSeed = false) {
     this.game.ui.hide('main-menu');
     this.render();
+    // the guest plays the host's seed, so only the host (or a solo run) picks one
+    $('coat-seed-row').classList.toggle('hidden', this.game.net.role === 'guest');
     this.game.ui.show('coatcheck-panel');
+    if (focusSeed) setTimeout(() => { $('coat-seed').focus(); $('coat-seed').select(); }, 60);
   }
+
+  /** what's typed in the seed box ('' = deal a random one) */
+  seed() { return normalizeSeed($('coat-seed')?.value); }
 
   close() {
     this.game.ui.hide('coatcheck-panel');
@@ -92,8 +100,15 @@ export class CoatCheck {
       if (this.game.net.role && !this.game.net.inRun) { this.close(); return; }   // co-op lobby: just pick
       this.game.ui.hide('coatcheck-panel');
       Audio.play('door');
-      this.game.newRun(this.current());
+      this.game.newRun(this.current(), this.seed());
     };
+    $('btn-seed-dice').onclick = () => { $('coat-seed').value = randomSeed(); Audio.play('dice_roll'); };
+    // capitals, digits and dashes as you type (the ends get tidied when you walk in)
+    $('coat-seed').addEventListener('input', (e) => {
+      const v = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+      if (v !== e.target.value) e.target.value = v;
+    });
+    $('coat-seed').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btn-coat-go').click(); });
     $('btn-coat-reset').onclick = () => {
       this.classes[this.selected] = { ...DEFAULT_CLASSES[this.selected] };
       this._save();

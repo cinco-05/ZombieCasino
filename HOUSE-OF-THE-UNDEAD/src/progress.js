@@ -110,10 +110,9 @@ export class Progress {
     };
   }
 
-  /** start-of-run perks (not on the daily — that's a level field) */
+  /** start-of-run perks */
   applyRunPerks() {
     const g = this.game;
-    if (g.mode === 'daily') return;
     if (this.has(1)) g.chips += 25;
     if (this.has(3)) g.player.grenades = Math.min(g.lethalMax() + 1, g.player.grenades + 1);
     if (this.has(5)) g.rewards.grant('hothand', { quiet: true });

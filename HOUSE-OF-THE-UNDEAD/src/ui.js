@@ -16,6 +16,7 @@ const CARTOON_TITLES = [
   'THE DEALER DEALS A DOOZY', 'CHIPS AHOY, MATEY!', 'THE CAN-CAN CATASTROPHE', 'WHEN THE SLOTS GO MARCHING IN',
 ];
 import { LOYALTY, MARKERS, CHIPS } from './progress.js';
+import { Seed } from './rng.js';
 
 const $ = (id) => document.getElementById(id);
 const HS_KEY = 'hotu_highscore_v1';
@@ -60,6 +61,7 @@ export class UI {
     this.bannerTimer = 0;
     this._wireSettings();
     this.renderHighscore();
+    addEventListener('hotu-song', (e) => this.nowPlaying(e.detail));
   }
 
   // ------------------------------ panels ------------------------------------
@@ -490,6 +492,26 @@ export class UI {
     layer.appendChild(arrow);
   }
 
+  // ---------------------------- fps, ping, the band --------------------------
+  /** the corner readout: frames a second, and the round trip to your partner */
+  updatePerf(fps, ping, online) {
+    const f = $('perf-fps'), p = $('perf-ping');
+    f.textContent = `${fps} FPS`;
+    f.className = fps >= 55 ? 'good' : fps >= 30 ? 'ok' : 'bad';
+    p.textContent = online ? `PING ${ping} ms` : 'PING 0 ms · SOLO';
+    p.className = !online || ping < 80 ? 'good' : ping < 160 ? 'ok' : 'bad';
+  }
+
+  /** a new tune: show its name for a few seconds */
+  nowPlaying(song) {
+    const el = $('now-playing');
+    if (!el || !song) return;
+    el.innerHTML = `♪ ${song.title} <em>· ${song.by}</em>`;
+    el.classList.add('show');
+    clearTimeout(this._npT);
+    this._npT = setTimeout(() => el.classList.remove('show'), 7000);
+  }
+
   // ------------------------------ settings ----------------------------------
   _wireSettings() {
     const g = this.game;
@@ -501,6 +523,7 @@ export class UI {
       music: saved.music ?? 0.5,
       sfx: saved.sfx ?? 0.9,
       reducedFlash: saved.reducedFlash ?? false,
+      showPerf: saved.showPerf ?? true,
       quality: saved.quality ?? (g.gpuStrong ? 'ultra' : 'high'),
       fov: saved.fov ?? CONFIG.player.fov,
       artStyle: saved.artStyle ?? '1930s',
@@ -525,6 +548,8 @@ export class UI {
     $('set-music').value = g.settings.music;
     $('set-sfx').value = g.settings.sfx;
     $('set-reduced-flash').checked = g.settings.reducedFlash;
+    $('set-show-perf').checked = g.settings.showPerf;
+    $('perf-hud').classList.toggle('off', !g.settings.showPerf);
     $('set-quality').value = g.settings.quality;
     $('set-fov').value = g.settings.fov;
     $('fov-val').textContent = g.settings.fov + '°';
@@ -535,6 +560,8 @@ export class UI {
       g.settings.music = parseFloat($('set-music').value);
       g.settings.sfx = parseFloat($('set-sfx').value);
       g.settings.reducedFlash = $('set-reduced-flash').checked;
+      g.settings.showPerf = $('set-show-perf').checked;
+      $('perf-hud').classList.toggle('off', !g.settings.showPerf);
       g.settings.fov = parseInt($('set-fov').value, 10);
       $('fov-val').textContent = g.settings.fov + '°';
       const q = $('set-quality').value;
@@ -545,7 +572,7 @@ export class UI {
       Audio.setVolumes(g.settings.master, g.settings.sfx, g.settings.music);
       this.saveSettings();
     };
-    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-fov', 'set-quality']) {
+    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality']) {
       $(id).addEventListener('input', apply);
       $(id).addEventListener('change', apply);
     }
@@ -689,11 +716,8 @@ export class UI {
         this._lastDeposit = { dep, rate };
         return dep;
       })()}</b> chips (${Math.round(this._lastDeposit.rate * 100)}% cut) — vault holds ${g.vault.banked}</div>`;
-    if (g.mode === 'daily') {
-      const score = g.dailyScore();
-      $('summary-stats').innerHTML += `<div class="cyan">⚡ DAILY SCORE: <b>${score}</b> — new seed at midnight</div>`;
-      g._endDailyMode(score);
-    }
+    $('summary-seed').innerHTML = `SEED <b>${Seed.text}</b>${Seed.custom ? ' <span class="dim">(your pick)</span>' : ''}`;
+    $('btn-replay-seed').classList.toggle('hidden', g.mode === 'coop');
     this.saveRunResult(won, g.round, g.chips, g.stats.kills);
     g.rewards.clearPresentation();
     this._summaryProgress();

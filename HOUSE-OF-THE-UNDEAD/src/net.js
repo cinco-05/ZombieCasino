@@ -20,6 +20,7 @@ import { Character } from './chars/character.js';
 import { buildWorldGun } from './gfx/viewmodels.js';
 import { GUNFX } from './weapons.js';
 import { STYLE } from './gfx/style.js';
+import { randomSeed } from './rng.js';
 
 const PROTO = 1;
 const PREFIX = 'hotu-coop-';
@@ -297,6 +298,8 @@ export class Net {
     this.guestReady = false; this.hostReady = false;
     this.reviveT = 0;
     this.partnerShots = 0;
+    this.ping = 0;            // round trip to your partner, ms (0 alone)
+    this._pingT = 0;
   }
 
   get active() { return this.connected && !!this.role; }
@@ -388,6 +391,7 @@ export class Net {
     try { this.conn?.close(); } catch { /* gone */ }
     try { this.peer?.destroy(); } catch { /* gone */ }
     this.conn = null; this.peer = null; this.role = null;
+    this.ping = 0;
     this._clearWorld();
     if (!quiet && had) this._status('Left the table.');
     $('btn-coop-start')?.classList.add('hidden');
@@ -415,8 +419,9 @@ export class Net {
   /** host: deal both of you in */
   startRun() {
     if (!this.isHost) return;
-    this.send({ t: 'start' });
-    this.game.coopNewRun();
+    const seed = this.game.coatCheck.seed() || randomSeed();   // both of you get the host's deal
+    this.send({ t: 'start', seed });
+    this.game.coopNewRun(seed);
   }
 
   /** both sides, at the start of a co-op run */
@@ -542,6 +547,11 @@ export class Net {
 
   // --------------------------------- ticking ---------------------------------
   update(dt) {
+    // ping: once a second, stamp a message and time it coming back
+    if (this.connected) {
+      this._pingT -= dt;
+      if (this._pingT <= 0) { this._pingT = 1; this.send({ t: 'pi', ts: performance.now() }); }
+    }
     if (!this.active || !this.inRun) return;
     const g = this.game;
     const inPlay = g.state === 'COMBAT' || g.state === 'COUNTDOWN' || (g.state === 'PAUSED' && (g._stateBeforePause === 'COMBAT' || g._stateBeforePause === 'COUNTDOWN'));
@@ -619,6 +629,14 @@ export class Net {
   _onMsg(m) {
     const g = this.game;
     switch (m.t) {
+      case 'pi':
+        this.send({ t: 'po', ts: m.ts });
+        break;
+      case 'po': {
+        const rtt = Math.max(0, performance.now() - m.ts);
+        this.ping = this.ping ? this.ping * 0.7 + rtt * 0.3 : rtt;
+        break;
+      }
       case 'hello':
         if (m.v !== PROTO) { this._status('Your friend has a different version of the game — you both need the same build.', 'bad'); this.leave(true); }
         break;
@@ -627,7 +645,7 @@ export class Net {
         this.leave(true);
         break;
       case 'start':
-        if (this.role === 'guest') g.coopNewRun();
+        if (this.role === 'guest') g.coopNewRun(m.seed || '');
         break;
       case 'ps': {
         const R = this.remote;

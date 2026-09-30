@@ -17,6 +17,7 @@
 
 import * as THREE from 'three';
 import { CONFIG, rand, randInt, pick } from './config.js';
+import { Seed } from './rng.js';
 import { Character } from './chars/character.js';
 import { cardMesh } from './chars/props.js';
 import { chipBombMesh } from './gfx/models.js';
@@ -450,9 +451,9 @@ export class Enemies {
     const queue = [];
     for (let i = 0; i < count; i++) {
       let kind = 'walker';
-      const r = Math.random();
+      const r = Seed.random('horde');
       if (mods.onlyKinds) {                                  // RUSH HOUR etc.
-        kind = pick(mods.onlyKinds);
+        kind = Seed.pick('horde', mods.onlyKinds);
       } else if (mods.heavyMix) {                            // HEAVYWEIGHT NIGHT
         kind = r < 0.4 ? 'brute' : r < 0.75 ? 'pitguard' : 'walker';
       } else {
@@ -465,20 +466,20 @@ export class Enemies {
         else if (round >= 6 && r < 0.72) kind = 'brute';
         else if (round >= 3 && r >= 0.72 && r < 0.8) kind = 'showgirl';   // 8%, every round from 3
       }
-      queue.push({ kind, elite: !!mods.elite && Math.random() < 0.25 });
+      queue.push({ kind, elite: !!mods.elite && Seed.random('horde') < 0.25 });
     }
     // penalty: extra specials
     for (let i = 0; i < (mods.extraSpecial || 0); i++) {
-      queue.push({ kind: pick(['brute', 'gasbag', 'pitguard']), elite: !!mods.elite });
+      queue.push({ kind: Seed.pick('horde', ['brute', 'gasbag', 'pitguard']), elite: !!mods.elite });
     }
     if (mods.debtCollector) queue.push({ kind: 'collector', elite: false });
     // bonus target: a jackpot wanders in on some rounds — far more often while
     // LADY LUCK still needs its arm
     const armWanted = this.game.wonder && !this.game.wonder.has('arm') && !this.game.wonder.built;
     const jp = mods.bossRound ? 0 : armWanted ? (round >= 2 ? 0.55 : 0) : (round >= 3 ? 0.25 : 0);
-    if (Math.random() < jp) queue.splice(Math.floor(queue.length * (0.3 + Math.random() * 0.5)), 0, { kind: 'jackpot', elite: false });
+    if (Seed.random('horde') < jp) queue.splice(Math.floor(queue.length * (0.3 + Seed.random('horde') * 0.5)), 0, { kind: 'jackpot', elite: false });
     // THE KING drops in on some nights
-    if (!mods.bossRound && round >= 4 && Math.random() < 0.22) queue.splice(Math.floor(queue.length * 0.5), 0, { kind: 'king', elite: false });
+    if (!mods.bossRound && round >= 4 && Seed.random('horde') < 0.22) queue.splice(Math.floor(queue.length * 0.5), 0, { kind: 'king', elite: false });
 
     this.spawnQueue = queue;
     this.roundScale = {

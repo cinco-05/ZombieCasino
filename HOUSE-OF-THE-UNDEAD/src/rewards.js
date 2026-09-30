@@ -22,6 +22,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Audio } from './audio.js';
 import { CHIPS } from './progress.js';
+import { Seed } from './rng.js';
 
 export const RARITY = {
   common:    { name: 'COMMON',    color: '#e8e2d0', hex: 0xe8e2d0, tier: 0 },
@@ -292,7 +293,7 @@ export class Rewards {
     const pity = this.dryKills >= 45;
     const now = performance.now();
     if (!sure && !pity) {
-      if (Math.random() > chance) return;
+      if (Seed.random('drops') > chance) return;
       if (now - this.lastDropAt < 4000) return;         // no spam: a drop has to feel like one
     }
     this.lastDropAt = now;
@@ -303,7 +304,7 @@ export class Rewards {
     // and now and then, a commemorative chip
     const chipOdds = z.golden ? 0.3 : z.elite ? 0.03 : 0;
     const miss = g.progress?.missingChip();
-    if (miss && Math.random() < chipOdds) g.pickups.spawnCollectible(z.mesh.position.clone().add(new THREE.Vector3(0.8, 0, 0.4)), miss.id);
+    if (miss && Seed.random('drops') < chipOdds) g.pickups.spawnCollectible(z.mesh.position.clone().add(new THREE.Vector3(0.8, 0, 0.4)), miss.id);
   }
 
   _rollRarity(minTier = 0, bonus = 0) {
@@ -317,20 +318,20 @@ export class Rewards {
     ORDER.forEach((r, i) => { if (i < minTier) w[r] = 0; });
     let sum = 0;
     for (const r of ORDER) sum += w[r];
-    let x = Math.random() * sum;
+    let x = Seed.random('drops') * sum;
     for (const r of ORDER) { x -= w[r]; if (x <= 0) return r; }
     return 'legendary';
   }
   _pick(rarity) {
     const list = BY_RARITY[rarity];
-    return list[Math.floor(Math.random() * list.length)];
+    return Seed.pick('drops', list);
   }
 
   // --------------------------------- surprises ---------------------------------
   /** host / solo: maybe schedule a surprise into this round */
   planRound(round, bossRound) {
     this.hitThisRound = false;
-    this.eventT = (!bossRound && round >= 2 && Math.random() < 0.35) ? 12 + Math.random() * 23 : -1;
+    this.eventT = (!bossRound && round >= 2 && Seed.random('rounds') < 0.35) ? 12 + Seed.random('rounds') * 23 : -1;
   }
 
   _surprise() {
@@ -339,7 +340,7 @@ export class Rewards {
     if (g.progress?.missingChip()) choices.push(['glint', 2.5]);
     let sum = 0;
     for (const [, w] of choices) sum += w;
-    let x = Math.random() * sum, pick = choices[0][0];
+    let x = Seed.random('rounds') * sum, pick = choices[0][0];
     for (const [k, w] of choices) { x -= w; if (x <= 0) { pick = k; break; } }
     const say = (text, color = 'gold', ms = 3200) => { g.ui.banner(text, color, ms); g.net?.send({ t: 'banner', text, color, ms }); };
     if (pick === 'happyhour') {

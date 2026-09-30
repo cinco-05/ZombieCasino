@@ -1,5 +1,6 @@
-// cards.js — pure casino logic (no DOM, no THREE). Blackjack deck + dealer,
-// European roulette wheel, and the NEW slot machine. Tested by test/cards.test.mjs.
+// cards.js — pure casino logic (no DOM, no THREE). Blackjack deck, dealer and
+// splits, the European roulette wheel, five card draw, and the three-reel
+// one-armed bandit. Tested by test/cards.test.mjs.
 
 // ============================== BLACKJACK ====================================
 const SUITS = ['♠', '♥', '♦', '♣'];
@@ -47,6 +48,23 @@ export function resolveBlackjack(player, dealer) {
   return 'loss';
 }
 
+/** a pair you can split: two cards of the same value (any two tens count) */
+export function canSplit(hand) {
+  return hand.length === 2 && cardValue(hand[0].rank) === cardValue(hand[1].rank);
+}
+
+/**
+ * settle one hand of a split round (a two-card 21 after a split is a plain 21,
+ * not a natural). -> 'win' | 'push' | 'loss'
+ */
+export function resolveSplitHand(hand, dealer) {
+  const pv = handValue(hand), dv = handValue(dealer);
+  if (pv > 21) return 'loss';
+  if (isBlackjack(dealer)) return 'loss';
+  if (dv > 21 || pv > dv) return 'win';
+  return pv === dv ? 'push' : 'loss';
+}
+
 // =============================== ROULETTE ====================================
 // European single-zero wheel, physical pocket order.
 export const WHEEL_ORDER = [
@@ -78,99 +96,6 @@ export function evaluateRouletteBet(bet, number) {
     case 'single': return bet.number === number;
     default: return false;
   }
-}
-
-// ================================ SLOTS (NEW) ================================
-// Weighted 3-reel machine. One free single-reel re-spin per intermission.
-export const SLOT_SYMBOLS = [
-  { sym: '🍒', weight: 5 },
-  { sym: '🔔', weight: 4 },
-  { sym: '♥',  weight: 4 },
-  { sym: '💀', weight: 3 },
-  { sym: '7',  weight: 2 },
-];
-
-export function spinReel(rng = Math.random) {
-  const total = SLOT_SYMBOLS.reduce((s, x) => s + x.weight, 0);
-  let r = rng() * total;
-  for (const x of SLOT_SYMBOLS) {
-    r -= x.weight;
-    if (r <= 0) return x.sym;
-  }
-  return SLOT_SYMBOLS[0].sym;
-}
-
-export function spinSlots(rng = Math.random) {
-  return [spinReel(rng), spinReel(rng), spinReel(rng)];
-}
-
-// ---- 3x3 grid slots: 3 columns x 3 rows, 5 paylines ----
-/** grid[col][row] — spin all three columns */
-export function spinGrid(rng = Math.random) {
-  return [0, 1, 2].map(() => [spinReel(rng), spinReel(rng), spinReel(rng)]);
-}
-
-export const SLOT_LINES = [
-  { name: 'TOP LINE',  cells: [[0, 0], [1, 0], [2, 0]] },
-  { name: 'MIDDLE',    cells: [[0, 1], [1, 1], [2, 1]] },
-  { name: 'BOTTOM',    cells: [[0, 2], [1, 2], [2, 2]] },
-  { name: 'DIAG \u2198', cells: [[0, 0], [1, 1], [2, 2]] },
-  { name: 'DIAG \u2197', cells: [[0, 2], [1, 1], [2, 0]] },
-];
-
-function triplePay(sym) {
-  switch (sym) {
-    case '7':  return { chips: 400, label: '7·7·7 JACKPOT +400' };
-    case '🍒': return { chips: 120, label: 'cherries +120' };
-    case '🔔': return { ammo: true, label: 'bells: ammo refill' };
-    case '♥':  return { heal: 35, label: 'hearts +35 HP' };
-    case '💀': return { hurt: 15, label: 'skulls -15 HP' };
-    default: return { chips: 0, label: '' };
-  }
-}
-
-/** evaluate all 5 paylines -> { wins:[{name,sym,cells,label}], chips, heal, hurt, ammo } */
-export function evalSlotsGrid(grid) {
-  const out = { wins: [], chips: 0, heal: 0, hurt: 0, ammo: false };
-  for (const line of SLOT_LINES) {
-    const syms = line.cells.map(([c, r]) => grid[c][r]);
-    if (syms[0] === syms[1] && syms[1] === syms[2]) {
-      const pay = triplePay(syms[0]);
-      out.wins.push({ name: line.name, sym: syms[0], cells: line.cells, label: pay.label });
-      out.chips += pay.chips || 0;
-      out.heal += pay.heal || 0;
-      out.hurt += pay.hurt || 0;
-      out.ammo = out.ammo || !!pay.ammo;
-    }
-  }
-  return out;
-}
-
-/** -> { chips, heal, ammo, hurt, label } (legacy single-line machine) */
-export function slotPayout(reels) {
-  const count = {};
-  for (const s of reels) count[s] = (count[s] || 0) + 1;
-  const three = Object.keys(count).find((k) => count[k] === 3);
-  const two = Object.keys(count).find((k) => count[k] === 2);
-  if (three) {
-    switch (three) {
-      case '7':  return { chips: 400, label: '7 · 7 · 7 — JACKPOT! +400 chips' };
-      case '🍒': return { chips: 120, label: 'Triple cherries! +120 chips' };
-      case '🔔': return { ammo: true, label: 'Triple bells! Reserve ammo refilled' };
-      case '♥':  return { heal: 35, label: 'Triple hearts! +35 health' };
-      case '💀': return { hurt: 15, label: 'Triple skulls... -15 health' };
-    }
-  }
-  if (two) {
-    switch (two) {
-      case '7':  return { chips: 90, label: 'Two sevens: +90 chips' };
-      case '🍒': return { chips: 40, label: 'Two cherries: +40 chips' };
-      case '🔔': return { chips: 25, label: 'Two bells: +25 chips' };
-      case '♥':  return { heal: 10, label: 'Two hearts: +10 health' };
-      case '💀': return { chips: 0, label: 'Two skulls: nothing... could be worse' };
-    }
-  }
-  return { chips: 0, label: 'No match. The house smiles.' };
 }
 
 // ============================ FIVE CARD DRAW =================================
@@ -243,75 +168,115 @@ export function dealerHolds(cards) {
   return cards.map((c) => keep.has(c));
 }
 
-// ======================= 5x5 SLOTS (runs pay) ================================
-// 5 columns x 5 rows. 7 paylines: all 5 rows + both main diagonals. A line
-// pays on its longest run of 3+ identical symbols: x1 for 3, x3 for 4,
-// x10 for the full 5.
+// ======================= SLOTS: THE ONE-ARMED BANDIT ==========================
+// A classic three-reel machine: sevens, single / double / triple BARs,
+// cherries, bells, hearts and a gold WILD star, with blanks between them the
+// way real strips are cut. The glass shows three rows; one pull plays all five
+// lines (the three rows and both diagonals). Pays are in coins, one coin per
+// line, so a pull is five coins; the casino turns coins into chips at whatever
+// a pull cost you. A WILD stands in for anything and doubles the line it helps
+// (two of them: x4). Three hearts also heal you, three bells also bring ammo.
+//
+// Paying back more than it takes is on purpose: it's a game about the house
+// losing. slotStats() works the exact figure out by trying every stop.
 
-export function spinGrid5(rng = Math.random) {
-  return [0, 1, 2, 3, 4].map(() => Array.from({ length: 5 }, () => spinReel(rng)));
-}
-
-export const SLOT_LINES_5 = [
-  ...[0, 1, 2, 3, 4].map((r) => ({
-    name: r === 2 ? 'CENTER' : `ROW ${r + 1}`,
-    cells: [0, 1, 2, 3, 4].map((c) => [c, r]),
-  })),
-  { name: 'DIAG \u2198', cells: [0, 1, 2, 3, 4].map((i) => [i, i]) },
-  { name: 'DIAG \u2197', cells: [0, 1, 2, 3, 4].map((i) => [i, 4 - i]) },
+export const REELS = [
+  ['seven', 'blank', 'cherry', 'blank', 'bar1', 'blank', 'bell', 'blank', 'bar2', 'blank', 'cherry',
+    'blank', 'heart', 'blank', 'bar1', 'wild', 'bar3', 'cherry', 'bar1', 'bell', 'heart', 'bar2'],
+  ['seven', 'blank', 'bar1', 'blank', 'cherry', 'blank', 'bell', 'blank', 'bar2', 'blank', 'heart',
+    'blank', 'bar1', 'blank', 'wild', 'blank', 'bar3', 'cherry', 'bar1', 'bell', 'heart', 'bar2'],
+  ['bar1', 'blank', 'seven', 'blank', 'heart', 'blank', 'bar2', 'blank', 'cherry', 'blank', 'bell',
+    'blank', 'wild', 'blank', 'bar1', 'blank', 'bar3', 'bell', 'cherry', 'bar2', 'bar1', 'heart'],
 ];
 
-const RUN_MULT = { 3: 1, 4: 3, 5: 10 };
-const RUN_BASE = {
-  '7':  { chips: 120 },
-  '🍒': { chips: 40 },
-  '🔔': { ammo: 1 },      // ammo units: 1 = +35% reserve; 3+ total = full refill
-  '♥':  { heal: 12 },
-  '💀': { hurt: 8 },
-};
+/** rows[i] = which row of the glass each reel's symbol sits on for that line */
+export const SLOT_LINES = [
+  { name: 'TOP LINE', rows: [0, 0, 0] },
+  { name: 'CENTER LINE', rows: [1, 1, 1] },
+  { name: 'BOTTOM LINE', rows: [2, 2, 2] },
+  { name: 'DIAGONAL ↘', rows: [0, 1, 2] },
+  { name: 'DIAGONAL ↗', rows: [2, 1, 0] },
+];
+export const COINS_PER_PULL = SLOT_LINES.length;
 
-/** longest run of >=3 identical symbols in a line's symbol list */
-function bestRun(syms) {
-  let best = null;
-  let start = 0;
-  for (let i = 1; i <= syms.length; i++) {
-    if (i === syms.length || syms[i] !== syms[start]) {
-      const len = i - start;
-      if (len >= 3 && (!best || len > best.len)) best = { sym: syms[start], start, len };
-      start = i;
-    }
+/** three of a kind (wilds may stand in), in coins per line */
+export const SLOT_PAYS = {
+  wild: 300, seven: 100, bar3: 50, bar2: 25, bar1: 12, bell: 15, heart: 10, cherry: 10,
+};
+export const SLOT_ANY_BAR = 5;       // any mix of BARs
+export const SLOT_TWO_CHERRIES = 3;  // cherries on the first two reels
+export const SLOT_ONE_CHERRY = 1;    // a cherry on the first reel
+
+/** the paytable as the glass shows it, best first */
+export const SLOT_PAYTABLE = [
+  { combo: ['wild', 'wild', 'wild'], coins: SLOT_PAYS.wild, key: 'wild' },
+  { combo: ['seven', 'seven', 'seven'], coins: SLOT_PAYS.seven, key: 'seven' },
+  { combo: ['bar3', 'bar3', 'bar3'], coins: SLOT_PAYS.bar3, key: 'bar3' },
+  { combo: ['bar2', 'bar2', 'bar2'], coins: SLOT_PAYS.bar2, key: 'bar2' },
+  { combo: ['bell', 'bell', 'bell'], coins: SLOT_PAYS.bell, key: 'bell', note: '+ AMMO' },
+  { combo: ['bar1', 'bar1', 'bar1'], coins: SLOT_PAYS.bar1, key: 'bar1' },
+  { combo: ['heart', 'heart', 'heart'], coins: SLOT_PAYS.heart, key: 'heart', note: '+ HEAL' },
+  { combo: ['cherry', 'cherry', 'cherry'], coins: SLOT_PAYS.cherry, key: 'cherry' },
+  { combo: ['anybar', 'anybar', 'anybar'], coins: SLOT_ANY_BAR, key: 'anybar' },
+  { combo: ['cherry', 'cherry', 'any'], coins: SLOT_TWO_CHERRIES, key: 'cherry2' },
+  { combo: ['cherry', 'any', 'any'], coins: SLOT_ONE_CHERRY, key: 'cherry1' },
+];
+
+const BARS = new Set(['bar1', 'bar2', 'bar3']);
+
+/** pull the arm: where each reel stops */
+export function spinSlotMachine(rng = Math.random) {
+  return REELS.map((strip) => Math.floor(rng() * strip.length));
+}
+
+/** what the glass shows: win[reel][row], the stop on the middle row */
+export function slotWindow(stops) {
+  return REELS.map((strip, i) => [-1, 0, 1].map((d) => strip[(stops[i] + d + strip.length) % strip.length]));
+}
+
+/** one line's three symbols -> { coins, key } (key names the paytable row) */
+export function slotLinePay(line) {
+  const wilds = line.filter((s) => s === 'wild').length;
+  if (wilds === 3) return { coins: SLOT_PAYS.wild, key: 'wild', wilds };
+  const dbl = 2 ** wilds;
+  let best = { coins: 0, key: null, wilds };
+  const take = (coins, key) => { if (coins > best.coins) best = { coins, key, wilds }; };
+  for (const [sym, pay] of Object.entries(SLOT_PAYS)) {
+    if (sym !== 'wild' && line.every((s) => s === sym || s === 'wild')) take(pay * dbl, sym);
   }
+  if (line.every((s) => BARS.has(s) || s === 'wild')) take(SLOT_ANY_BAR * dbl, 'anybar');
+  const ch = (s) => s === 'cherry' || s === 'wild';
+  if (ch(line[0]) && ch(line[1]) && (line[0] === 'cherry' || line[1] === 'cherry')) {
+    take(SLOT_TWO_CHERRIES * 2 ** ((line[0] === 'wild') + (line[1] === 'wild')), 'cherry2');
+  } else if (line[0] === 'cherry') take(SLOT_ONE_CHERRY, 'cherry1');
   return best;
 }
 
-/** -> { wins:[{name,sym,len,cells,label}], chips, heal, hurt, ammoUnits } */
-export function evalSlotsGrid5(grid) {
-  const out = { wins: [], chips: 0, heal: 0, hurt: 0, ammoUnits: 0 };
-  for (const line of SLOT_LINES_5) {
-    const syms = line.cells.map(([c, r]) => grid[c][r]);
-    const run = bestRun(syms);
-    if (!run) continue;
-    const base = RUN_BASE[run.sym];
-    const mult = RUN_MULT[run.len];
-    const cells = line.cells.slice(run.start, run.start + run.len);
-    const win = { name: line.name, sym: run.sym, len: run.len, cells };
-    if (base.chips) {
-      const pay = base.chips * mult;
-      out.chips += pay;
-      win.label = `${run.len}x ${run.sym} +${pay}`;
-    } else if (base.ammo) {
-      out.ammoUnits += base.ammo * mult;
-      win.label = `${run.len}x 🔔 ammo`;
-    } else if (base.heal) {
-      const h = base.heal * mult;
-      out.heal += h;
-      win.label = `${run.len}x ♥ +${h} HP`;
-    } else if (base.hurt) {
-      const h = base.hurt * mult;
-      out.hurt += h;
-      win.label = `${run.len}x 💀 -${h} HP`;
-    }
-    out.wins.push(win);
-  }
+/** the whole glass -> { coins, wins:[{line, name, rows, coins, key, wilds}], heal, ammo } */
+export function evalSlotWindow(win) {
+  const out = { coins: 0, wins: [], heal: false, ammo: false };
+  SLOT_LINES.forEach((L, line) => {
+    const syms = L.rows.map((row, reel) => win[reel][row]);
+    const pay = slotLinePay(syms);
+    if (!pay.coins) return;
+    out.coins += pay.coins;
+    out.wins.push({ line, name: L.name, rows: L.rows, ...pay });
+    if (pay.key === 'heart') out.heal = true;
+    if (pay.key === 'bell') out.ammo = true;
+  });
   return out;
+}
+
+/** exact odds over every stop combination -> { rtp (coins back per coin in), hit, topPrize } */
+export function slotStats() {
+  const [A, B, C] = REELS.map((r) => r.length);
+  let coins = 0, hits = 0, top = 0;
+  for (let a = 0; a < A; a++) for (let b = 0; b < B; b++) for (let c = 0; c < C; c++) {
+    const r = evalSlotWindow(slotWindow([a, b, c]));
+    coins += r.coins;
+    if (r.coins > 0) hits++;
+    if (r.wins.some((w) => w.key === 'wild' || w.key === 'seven')) top++;
+  }
+  const n = A * B * C;
+  return { rtp: coins / n / COINS_PER_PULL, hit: hits / n, topPrize: top / n };
 }

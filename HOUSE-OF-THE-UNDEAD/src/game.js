@@ -27,7 +27,8 @@ import { Net } from './net.js';
 import { Rewards } from './rewards.js';
 import { Progress } from './progress.js';
 import { ZONES } from './arena.js';
-import { LETHALS, TACTICALS, DAILY_CLASS } from './catalog.js';
+import { LETHALS, TACTICALS } from './catalog.js';
+import { Seed } from './rng.js';
 import { makeEnvironment } from './gfx/env.js';
 import { STYLE } from './gfx/style.js';
 import { PostFX } from './gfx/postfx.js';
@@ -36,22 +37,6 @@ import { skinFor, variantsOf, LOOKS } from './chars/skins.js';
 import { bodyFor } from './chars/rig.js';
 
 const $ = (id) => document.getElementById(id);
-
-// deterministic PRNG for daily runs — same date, same run, worldwide
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function hashStr(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // special round modifiers — rolled on non-boss rounds 3+ (40% chance)
 const SPECIAL_ROUNDS = [
@@ -167,8 +152,7 @@ export class Game {
     this._fwd = new THREE.Vector3();
     this.dashBuffT = 0;
     this.objective = null;
-    this.mode = 'normal';           // 'normal' | 'daily'
-    this._realRandom = null;
+    this.mode = 'normal';           // 'normal' | 'coop'
     this.beatHouse = false;         // cleared round 10 this run -> endless floor
     this.grudge = this._loadGrudge();
 
@@ -298,9 +282,9 @@ export class Game {
   }
 
   /** both sides: a co-op run starts (the host deals; the guest waits for round 1) */
-  coopNewRun() {
-    this._endDailyMode();
+  coopNewRun(seed = '') {
     this.mode = 'coop';
+    Seed.begin(seed);                            // both of you are dealt from the host's seed
     this.ui.hide('coop-panel');
     this.ui.hide('main-menu');
     this._resetRun(true, this.coatCheck.current());
@@ -341,8 +325,8 @@ export class Game {
     this.round = m.round;
     this.specialRound = m.special || null;
     this.objective = null;
-    if (!m.boss && this.round >= 2 && Math.random() < 0.5) {
-      const def = OBJECTIVES[Math.floor(Math.random() * OBJECTIVES.length)];
+    if (!m.boss && this.round >= 2 && Seed.random('rounds') < 0.5) {
+      const def = Seed.pick('rounds', OBJECTIVES);
       this.objective = { def, progress: 0, failed: false, time: 0, startHeadshots: this.stats.headshots };
     }
     this.arena.setLowLight(!!m.lowLight);
@@ -445,6 +429,17 @@ export class Game {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.arena?.enableShadows(q !== 'low', q === 'ultra' ? 4096 : q === 'high' ? 2048 : 1024);
     this._perf = { t: 0, frames: 0, slow: 0, done: q === 'low' };
+  }
+
+  /** the corner readout: real frames a second (not the capped step), and ping */
+  _countFrames() {
+    const now = performance.now();
+    const c = this._fpsCount || (this._fpsCount = { t0: now, n: 0 });
+    c.n++;
+    if (now - c.t0 < 500) return;
+    const fps = Math.round(c.n * 1000 / (now - c.t0));
+    c.t0 = now; c.n = 0;
+    if (this.settings.showPerf) this.ui.updatePerf(fps, Math.round(this.net.ping), this.net.connected);
   }
 
   /** watch the frame rate in combat; step quality down once if it's struggling */
@@ -586,6 +581,7 @@ export class Game {
     this._stateBeforePause = this.state;
     this.player.keys = {};
     this.setState('PAUSED');
+    $('pause-seed').textContent = Seed.text;
     if (this.net.active) this.ui.prompt('Co-op keeps playing while you\'re paused!', 2500);
     this.ui.show('pause-menu');
   }
@@ -634,46 +630,6 @@ export class Game {
 
   _saveGrudge() {
     try { localStorage.setItem('hotu_grudge_v1', JSON.stringify(this.grudge)); } catch { /* fine */ }
-  }
-
-  // ------------------------------ daily run ---------------------------------
-  _loadDaily() {
-    try { const d = JSON.parse(localStorage.getItem('hotu_daily_v1') || 'null'); return d || {}; }
-    catch { return {}; }
-  }
-
-  _saveDaily(d) {
-    try { localStorage.setItem('hotu_daily_v1', JSON.stringify(d)); } catch { /* fine */ }
-  }
-
-  dailyScore() {
-    return this.round * 1000 + this.chips + this.stats.kills * 10 + (this.beatHouse ? 5000 : 0);
-  }
-
-  startDaily() {
-    const daily = this._loadDaily();
-    if (daily.date === todayStr() && daily.played) {
-      this.ui.prompt(`Today's daily is done — score ${daily.score}. New seed at midnight.`);
-      return;
-    }
-    // one attempt: mark it played the moment the doors open
-    this._saveDaily({ date: todayStr(), played: true, score: 0 });
-    this.clearSave();
-    this._realRandom = Math.random;
-    Math.random = mulberry32(hashStr('HOTU-DAILY-' + todayStr()));
-    this.mode = 'daily';
-    this._resetRun(false, DAILY_CLASS);   // level field: house loadout, no vault perks
-    this.round = 1;
-    this.beginRound();
-    this.ui.banner(`⚡ DAILY RUN — ${todayStr()} — one attempt, no perks, same seed for everyone`, 'cyan', 3200);
-  }
-
-  _endDailyMode(finalScore = null) {
-    if (this.mode === 'daily') {
-      if (finalScore !== null) this._saveDaily({ date: todayStr(), played: true, score: finalScore });
-      if (this._realRandom) { Math.random = this._realRandom; this._realRandom = null; }
-      this.mode = 'normal';
-    }
   }
 
   /** the streak's chip multiplier: 5 → ×1.5, 10 → ×2, 20 → ×2.5, 35 → ×3, 50 → ×3.5 */
@@ -762,24 +718,29 @@ export class Game {
     this.ui.updatePerks?.();
   }
 
-  /** straight in with the class picked at the Coat Check */
-  newRun(loadout = null) {
+  /** straight in with the class picked at the Coat Check. seed: the one typed
+      at the Coat Check, or blank for a fresh random one */
+  newRun(loadout = null, seed = '') {
     if (this.net.active) {
       // co-op: the host re-deals for both; the guest waits for the host
       if (this.net.isHost) this.net.startRun(); else this.ui.prompt('The host deals the next game', 2500);
       return;
     }
-    this._endDailyMode();
     this.mode = 'normal';
     this.clearSave();
+    Seed.begin(seed);
     this._resetRun(true, loadout);
     this.round = 1;
     this.beginRound();
+    this.ui.prompt(`SEED ${Seed.text}${Seed.custom ? ' — your pick' : ''} · same seed, same deal`, 3200);
   }
+
+  /** restart: a seed you typed in sticks; a random one is re-dealt */
+  restartRun() { this.newRun(null, Seed.custom ? Seed.text : ''); }
 
   // ------------------------- mid-run save (localStorage) --------------------
   saveRun() {
-    if (this.round < 1 || this.mode === 'daily' || this.mode === 'coop') return;   // dailies are one attempt; co-op lives on the host
+    if (this.round < 1 || this.mode === 'coop') return;   // co-op lives on the host
     const arsenal = {};
     for (const [id, w] of Object.entries(this.weapons.arsenal)) {
       arsenal[id] = { mag: w.mag, reserve: w.reserve, mods: { ...w.mods }, packed: w.packed };
@@ -810,6 +771,7 @@ export class Game {
       stats: { ...this.stats },
       vaultStartChips: this.vaultStartChips || 0,
       beatHouse: this.beatHouse,
+      seed: Seed.save(),              // where every stream stands, so a continue deals the same cards
     };
     try { localStorage.setItem('hotu_run_save_v1', JSON.stringify(data)); } catch { /* private mode */ }
   }
@@ -828,7 +790,8 @@ export class Game {
   continueRun() {
     const d = this._loadSave();
     if (!d) return;
-    this._endDailyMode();
+    this.mode = 'normal';
+    Seed.restore(d.seed);
     this._resetRun(true, d.loadout);
     this.round = d.round;
     this.chips = d.chips;
@@ -877,13 +840,6 @@ export class Game {
     if (save) cont.textContent = `CONTINUE RUN — ROUND ${save.round + 1}`;
     $('btn-vault').textContent = `🏦 THE VAULT — ${this.vault.banked} banked`;
     this.ui.renderLoyalty();
-    const daily = this._loadDaily();
-    const done = daily.date === todayStr() && daily.played;
-    const btn = $('btn-daily');
-    btn.disabled = done;
-    btn.textContent = done
-      ? `⚡ DAILY DONE — SCORE ${daily.score}`
-      : `⚡ DAILY RUN — ${todayStr()}`;
   }
 
   startNextRound() {
@@ -898,16 +854,16 @@ export class Game {
     this.objective = null;
     const isBoss = this.isBossRound();
     mods.bossRound = isBoss;
-    if (!isBoss && this.round >= 2 && Math.random() < 0.5) {
-      const def = OBJECTIVES[Math.floor(Math.random() * OBJECTIVES.length)];
+    if (!isBoss && this.round >= 2 && Seed.random('rounds') < 0.5) {
+      const def = Seed.pick('rounds', OBJECTIVES);
       this.objective = { def, progress: 0, failed: false, time: 0, startHeadshots: this.stats.headshots };
     }
 
     // roll a special round on non-boss rounds 3+
     this.specialRound = null;
-    if (!isBoss && this.round >= 3 && Math.random() < 0.4) {
+    if (!isBoss && this.round >= 3 && Seed.random('rounds') < 0.4) {
       const pool = SPECIAL_ROUNDS.filter((sp) => this.round >= sp.minRound);
-      this.specialRound = pool[Math.floor(Math.random() * pool.length)];
+      this.specialRound = Seed.pick('rounds', pool);
       for (const [k, v] of Object.entries(this.specialRound.mods)) {
         if (typeof v === 'number' && typeof mods[k] === 'number') mods[k] *= v;
         else mods[k] = v;
@@ -922,7 +878,7 @@ export class Game {
     let bossKind = null;
     if (this.round === CONFIG.minibossRound) bossKind = 'pitboss';
     else if (this.round === CONFIG.finalRound) bossKind = 'housedealer';
-    else if (isBoss) bossKind = Math.random() < 0.5 ? 'pitboss' : 'housedealer';   // endless
+    else if (isBoss) bossKind = Seed.random('rounds') < 0.5 ? 'pitboss' : 'housedealer';   // endless
 
     if (this.net.isHost) {
       this.net.hostReady = false; this.net.guestReady = false;
@@ -1057,7 +1013,8 @@ export class Game {
     // ENTER THE CASINO goes through the Coat Check first (pick / build a class)
     $('btn-start').onclick = () => { Audio.init(); this.coatCheck.open(); };
     $('btn-continue').onclick = () => { Audio.init(); this.continueRun(); };
-    $('btn-daily').onclick = () => { Audio.init(); this.startDaily(); };
+    $('btn-seed').onclick = () => { Audio.init(); this.coatCheck.open(true); };
+    $('btn-replay-seed').onclick = () => this.newRun(null, Seed.text);
     $('btn-cashout').onclick = () => this.cashOut();
     $('btn-vault').onclick = () => {
       this.ui.hide('main-menu');
@@ -1097,7 +1054,7 @@ export class Game {
     this.backToMenu = backToMenu;
     $('btn-main-menu').onclick = backToMenu;
     $('btn-resume').onclick = () => this.resume();
-    $('btn-restart-pause').onclick = () => this.newRun();
+    $('btn-restart-pause').onclick = () => this.restartRun();
     $('btn-quit-pause').onclick = backToMenu;
     const openSettings = (from) => {
       this._settingsReturn = from;
@@ -1209,6 +1166,7 @@ export class Game {
         break;
     }
     this._watchPerf(rawDt);
+    this._countFrames();
 
     // 3D audio: keep the listener glued to the camera
     if (Audio.ready) {

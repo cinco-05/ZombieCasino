@@ -13,6 +13,9 @@
 
 <canvas id="game-canvas"></canvas>
 
+<!-- frame rate + ping (0 when you play alone), and what the band is playing -->
+<div id="perf-hud"><span id="now-playing"></span><span id="perf-fps">— FPS</span><span id="perf-ping">PING 0 ms</span></div>
+
 <!-- ============================== LOADING ================================= -->
 <div id="loading-screen">
   <div class="load-inner">
@@ -100,7 +103,7 @@
       <button id="btn-continue" class="menu-item hidden">CONTINUE RUN</button>
       <button id="btn-start" class="menu-item primary">ENTER THE CASINO</button>
       <button id="btn-coop" class="menu-item">🤝 PLAY WITH A FRIEND</button>
-      <button id="btn-daily" class="menu-item daily">⚡ DAILY RUN</button>
+      <button id="btn-seed" class="menu-item seed">🎲 PLAY A SEED</button>
       <button id="btn-vault" class="menu-item">THE VAULT</button>
       <button id="btn-markers" class="menu-item">🏆 MARKERS &amp; CHIPS</button>
       <button id="btn-settings-main" class="menu-item">SETTINGS</button>
@@ -165,6 +168,7 @@
   <div class="deco-card">
     <h2>PAUSED</h2>
     <p class="dim">The zombies wait politely.</p>
+    <p class="seed-line small">SEED <b id="pause-seed">—</b></p>
     <button id="btn-resume" class="btn btn-big">RESUME</button>
     <button id="btn-restart-pause" class="btn">RESTART RUN</button>
     <button id="btn-settings-pause" class="btn">SETTINGS</button>
@@ -200,6 +204,8 @@
       <input id="set-music" type="range" min="0" max="1" step="0.05" value="0.5"></div>
     <div class="setting-row"><label>Effects volume</label>
       <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
+    <div class="setting-row"><label>Show FPS &amp; ping<br><span class="dim small">Top-right corner. Ping reads 0 when you play alone</span></label>
+      <input id="set-show-perf" type="checkbox" checked></div>
     <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
       <input id="set-reduced-flash" type="checkbox"></div>
     <div class="setting-row"><label>Display</label>
@@ -232,6 +238,11 @@
   <div class="coat-foot">
     <button id="btn-coat-back" class="btn btn-ghost">◂ BACK</button>
     <button id="btn-coat-reset" class="btn">RESET TICKET</button>
+    <div id="coat-seed-row" class="coat-seed-row" title="Leave it blank for a random deal. The same seed deals the same shop, cards, spins and rounds.">
+      <label for="coat-seed">SEED</label>
+      <input id="coat-seed" maxlength="20" placeholder="RANDOM" spellcheck="false" autocomplete="off">
+      <button id="btn-seed-dice" class="btn small-btn" title="Deal a random seed">🎲</button>
+    </div>
     <button id="btn-coat-go" class="btn btn-big">WALK IN ▸</button>
   </div>
 </div>
@@ -251,6 +262,7 @@
     <div class="shop-round">
       <h2 id="inter-round">ROUND CLEARED</h2>
       <div id="inter-next" class="shop-next"></div>
+      <div id="shop-seed" class="shop-next shop-seed"></div>
     </div>
     <div class="shop-vitals" id="shop-vitals"></div>
     <div class="shop-bank"><span class="chip-icon"></span><span class="chip-balance">0 CHIPS</span></div>
@@ -269,77 +281,133 @@
 </div>
 
 <!-- ============================ BLACKJACK ================================= -->
-<div id="blackjack-panel" class="panel center-panel hidden felt">
-  <h2>♠ BLACKJACK ♥</h2>
-  <div id="bj-wager-info" class="dim small"></div>
-  <div class="bj-row"><span class="seat">DEALER</span><div id="bj-dealer-cards" class="card-row"></div><span id="bj-dealer-value" class="hand-val"></span></div>
-  <div class="bj-row"><span class="seat">YOU</span><div id="bj-player-cards" class="card-row"></div><span id="bj-player-value" class="hand-val"></span></div>
-  <div id="bj-status" class="bj-status">Hit or stand?</div>
-  <div class="btn-row">
-    <button id="bj-hit" class="btn">HIT</button>
-    <button id="bj-stand" class="btn">STAND</button>
-    <button id="bj-double" class="btn btn-gold">DOUBLE DOWN</button>
+<div id="blackjack-panel" class="panel table-stage hidden" data-game="blackjack">
+  <div class="ts-head">
+    <div class="ts-sign">♠ BLACKJACK ♥</div>
+    <div id="bj-wager-info" class="ts-wager"></div>
+    <div class="ts-bank"><span class="chip-icon"></span><span class="chip-balance">0 CHIPS</span></div>
   </div>
-  <p class="dim small">Dealer stands on 17. Blackjack pays as a win. Push returns your wager.</p>
+  <div class="ts-scene">
+    <div class="ts-table half-moon">
+      <svg class="felt-print" viewBox="0 0 1000 440" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M 140 128 Q 500 222 860 128" class="felt-line" />
+        <path id="bj-arc1" d="M 175 150 Q 500 252 825 150" fill="none" />
+        <path id="bj-arc2" d="M 190 178 Q 500 266 810 178" fill="none" />
+        <text class="felt-text big"><textPath href="#bj-arc1" startOffset="50%" text-anchor="middle">A NATURAL PAYS A TIER UP</textPath></text>
+        <text class="felt-text"><textPath href="#bj-arc2" startOffset="50%" text-anchor="middle">DEALER STANDS ON 17 · SPLIT ANY PAIR</textPath></text>
+      </svg>
+      <div class="dealer-rack" aria-hidden="true"></div>
+      <div class="shoe" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="discard" aria-hidden="true"></div>
+      <div class="ts-nameplate">YOUR DEALER · <b class="dealer-name">MORTIMER</b></div>
+      <div class="bj-dealer-zone">
+        <div id="bj-dealer-cards" class="card-fan"></div>
+        <div id="bj-dealer-value" class="hand-badge"></div>
+      </div>
+      <div id="bj-hands" class="bj-hands"></div>
+    </div>
+  </div>
+  <div id="bj-status" class="ts-status">Hit or stand?</div>
+  <div class="ts-actions">
+    <button id="bj-hit" class="tbtn"><kbd>H</kbd>HIT</button>
+    <button id="bj-stand" class="tbtn"><kbd>S</kbd>STAND</button>
+    <button id="bj-double" class="tbtn gold"><kbd>D</kbd>DOUBLE</button>
+    <button id="bj-split" class="tbtn gold"><kbd>P</kbd>SPLIT</button>
+  </div>
+  <p class="ts-rules">Split a pair (any two tens too) into up to four hands; each new hand puts up the same stake. Win more hands than you lose and the card pays out. Sweep every hand of a split for a tier up. Push returns your stake.</p>
 </div>
 
 <!-- ============================= ROULETTE ================================= -->
-<div id="roulette-panel" class="panel center-panel hidden felt">
-  <h2>◉ ROULETTE</h2>
-  <div id="rou-wager-info" class="dim small"></div>
-  <canvas id="roulette-canvas" width="340" height="340"></canvas>
-  <div id="rou-status" class="bj-status">Place your bet.</div>
-  <div id="rou-history"></div>
-  <div class="rou-grid">
-    <button class="rou-bet btn rb-red" data-bet="red">RED</button>
-    <button class="rou-bet btn rb-black" data-bet="black">BLACK</button>
-    <button class="rou-bet btn" data-bet="odd">ODD</button>
-    <button class="rou-bet btn" data-bet="even">EVEN</button>
-    <button class="rou-bet btn" data-bet="low">1–18</button>
-    <button class="rou-bet btn" data-bet="high">19–36</button>
+<div id="roulette-panel" class="panel table-stage hidden" data-game="roulette">
+  <div class="ts-head">
+    <div class="ts-sign">◉ ROULETTE</div>
+    <div id="rou-wager-info" class="ts-wager"></div>
+    <div class="ts-bank"><span class="chip-icon"></span><span class="chip-balance">0 CHIPS</span></div>
   </div>
-  <div class="rou-single">
-    <button class="rou-bet btn rb-green" data-bet="green">● GREEN 0</button>
-    <button class="rou-bet btn btn-gold" data-bet="single">SINGLE NUMBER (bigger payout)</button>
-    <input id="rou-number" type="number" min="0" max="36" value="7">
+  <div class="ts-scene rou-scene">
+    <div class="rou-wheel-wrap">
+      <div class="rou-bowl"><canvas id="roulette-canvas" width="440" height="440"></canvas></div>
+      <div id="rou-history" class="rou-tote"></div>
+    </div>
+    <div class="ts-table rou-table">
+      <div id="rou-layout" class="rou-layout"></div>
+    </div>
   </div>
-  <button id="rou-spin" class="btn btn-big" disabled>SPIN</button>
+  <div id="rou-status" class="ts-status">Place your chip on the layout.</div>
+  <div class="ts-actions">
+    <button id="rou-spin" class="tbtn gold big" disabled><kbd>SPACE</kbd>SPIN THE WHEEL</button>
+  </div>
+  <p class="ts-rules">Click the layout to place your chip. Colors, odd/even and halves win the card's reward. A single number or the green zero pays a tier up (and green hands LADY LUCK her heart).</p>
 </div>
 
 <!-- =============================== POKER ================================== -->
-<div id="poker-panel" class="panel center-panel hidden felt">
-  <h2>🃏 FIVE CARD DRAW</h2>
-  <div id="poker-wager-info" class="dim small"></div>
-  <div class="bj-row"><span class="seat">DEALER</span><div id="poker-dealer-cards" class="card-row"></div></div>
-  <div class="bj-row"><span class="seat">YOU</span><div id="poker-player-cards" class="card-row"></div></div>
-  <div id="poker-status" class="bj-status">Click cards to HOLD, then draw.</div>
-  <div class="btn-row">
-    <button id="poker-draw" class="btn btn-big">DRAW</button>
+<div id="poker-panel" class="panel table-stage hidden" data-game="poker">
+  <div class="ts-head">
+    <div class="ts-sign">♣ FIVE CARD DRAW ♦</div>
+    <div id="poker-wager-info" class="ts-wager"></div>
+    <div class="ts-bank"><span class="chip-icon"></span><span class="chip-balance">0 CHIPS</span></div>
   </div>
-  <p class="dim small">One draw. Beat the dealer and your hand rank sets the reward:<br>
-  pair or less = COMMON · two pair to straight = RARE · flush or better = LEGENDARY.<br>
-  Lose and it's a moderate penalty next round.</p>
+  <div class="ts-scene">
+    <div class="ts-table oval">
+      <svg class="felt-print" viewBox="0 0 1000 440" preserveAspectRatio="none" aria-hidden="true">
+        <ellipse cx="500" cy="220" rx="430" ry="180" class="felt-line" />
+        <path id="pk-arc" d="M 320 205 Q 500 240 680 205" fill="none" />
+        <text class="felt-text"><textPath href="#pk-arc" startOffset="50%" text-anchor="middle">FLUSH OR BETTER PAYS A TIER UP</textPath></text>
+      </svg>
+      <div class="shoe" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="discard" aria-hidden="true"></div>
+      <div class="ts-nameplate">YOUR DEALER · <b class="dealer-name">MORTIMER</b></div>
+      <div class="pk-zone dealer"><div id="poker-dealer-cards" class="card-fan wide"></div><div id="poker-dealer-hand" class="hand-badge"></div></div>
+      <div class="pk-zone player"><div id="poker-player-cards" class="card-fan wide"></div><div id="poker-player-hand" class="hand-badge"></div></div>
+    </div>
+  </div>
+  <div id="poker-status" class="ts-status">Click cards to HOLD, then draw.</div>
+  <div class="ts-actions">
+    <button id="poker-draw" class="tbtn gold big"><kbd>SPACE</kbd>DRAW</button>
+  </div>
+  <p class="ts-rules">One draw. Hold what you like (keys 1–5), then draw. Beat the dealer's hand to win the card's reward; win with a flush or better and it pays a tier up. Lose and the card's penalty comes due.</p>
 </div>
 
 <!-- =============================== SLOTS ================================== -->
-<div id="slots-panel" class="panel center-panel hidden felt">
-  <h2>🎰 LUCKY UNDEAD SLOTS</h2>
-  <div class="chip-balance"></div>
-  <div id="slots-reels" class="grid5"></div>
-  <div id="slots-status" class="bj-status">Pull the arm.</div>
-  <div id="slots-respin-row" style="display:none">
-    <span class="dim small">One free re-spin — pick a column:</span>
-    <button class="respin-btn btn" data-reel="0">C1</button>
-    <button class="respin-btn btn" data-reel="1">C2</button>
-    <button class="respin-btn btn" data-reel="2">C3</button>
-    <button class="respin-btn btn" data-reel="3">C4</button>
-    <button class="respin-btn btn" data-reel="4">C5</button>
+<div id="slots-panel" class="panel slot-stage hidden">
+  <div class="slot-machine">
+    <div class="slot-cabinet">
+      <div class="slot-marquee">
+        <div class="bulbs"></div>
+        <div class="marquee-title">LUCKY <span>UNDEAD</span></div>
+        <div class="marquee-sub">★ FIVE LINES · WILDS DOUBLE · 7 7 7 ★</div>
+      </div>
+      <div id="slots-paytable" class="slot-paytable"></div>
+      <div class="slot-glass">
+        <div class="line-tabs left"><i data-line="0">1</i><i data-line="3">4</i><i data-line="1">2</i><i data-line="4">5</i><i data-line="2">3</i></div>
+        <div id="slot-reels" class="slot-reels"></div>
+        <svg id="slot-paylines" class="slot-paylines" viewBox="0 0 300 300" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="line-tabs right"><i data-line="0">1</i><i data-line="4">5</i><i data-line="1">2</i><i data-line="3">4</i><i data-line="2">3</i></div>
+      </div>
+      <div class="slot-meters">
+        <div class="meter"><span>PULLS</span><b id="slots-pulls">0</b></div>
+        <div class="meter"><span>BET / PULL</span><b id="slots-bet">0</b></div>
+        <div class="meter win"><span>WIN</span><b id="slots-win">0</b></div>
+        <div class="meter"><span>CHIPS</span><b id="slots-chips">0</b></div>
+      </div>
+      <div class="slot-deck">
+        <button class="stop-btn" data-reel="0">STOP</button>
+        <button class="stop-btn" data-reel="1">STOP</button>
+        <button class="stop-btn" data-reel="2">STOP</button>
+        <button id="slots-spin" class="spin-btn">SPIN</button>
+      </div>
+      <div class="slot-tray"><div id="slot-coins" class="slot-coins"></div></div>
+    </div>
+    <div id="slot-lever" class="slot-lever" title="Pull the arm (drag it down)">
+      <div class="lever-arm"><div class="lever-ball"></div></div>
+      <div class="lever-hub"></div>
+    </div>
   </div>
-  <div class="btn-row">
-    <button id="slots-spin" class="btn btn-big">PULL THE ARM</button>
-    <button id="slots-close" class="btn btn-ghost">BACK TO THE SHOP</button>
+  <div id="slots-status" class="ts-status">Pull the arm.</div>
+  <div class="slot-foot">
+    <span class="dim small">Drag the arm or press SPACE. Hit STOP (or 1–3) to stop a reel early.</span>
+    <button id="slots-close" class="tbtn ghost">BACK TO THE SHOP ▸</button>
   </div>
-  <p class="dim small">7 paylines: 5 rows + both diagonals. Runs of 3+ pay: x1 / x3 / x10 for 3 / 4 / 5 in a row.<br>Five 7s in a line pays 1200. Bells give ammo, hearts heal, skulls sting (they can't kill you).</p>
 </div>
 
 <!-- ============================= UPGRADES ================================= -->
@@ -354,9 +422,11 @@
   <div class="deco-card">
     <h1 id="summary-title">THE HOUSE WINS</h1>
     <p id="summary-cause" class="dim"></p>
+    <div id="summary-seed" class="seed-line"></div>
     <div id="summary-stats"></div>
     <div id="summary-progress"></div>
     <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
+    <button id="btn-replay-seed" class="btn">REPLAY THIS SEED</button>
     <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
   </div>
 </div>
