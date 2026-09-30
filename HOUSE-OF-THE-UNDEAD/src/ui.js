@@ -17,6 +17,9 @@ const CARTOON_TITLES = [
 ];
 import { LOYALTY, MARKERS, CHIPS } from './progress.js';
 import { Seed } from './rng.js';
+import { SEAT_COLOR } from './net.js';
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const $ = (id) => document.getElementById(id);
 const HS_KEY = 'hotu_highscore_v1';
@@ -257,8 +260,12 @@ export class UI {
       if (q.kind === 'collectible') dot(q.mesh.position, '#ffe8a0', 5, true);
       else if (q.kind === 'comp') { const r = RARITY[COMPS[q.key].rarity]; if (r.tier >= 2) dot(q.mesh.position, r.color, 4, true); }
     }
-    // your partner
-    if (g.net?.avatar) dot(g.net.avatar.root.position, '#7ae8ff', 4, true);
+    // your teammates, in their seat colors; a downed one blinks red
+    for (const r of g.net?.players?.values() || []) {
+      if (!r.avatar) continue;
+      const blink = r.down && Math.sin(performance.now() / 120) > 0;
+      dot(r.avatar.root.position, r.down ? (blink ? '#ff2d2d' : '#ffffff') : SEAT_COLOR[r.seat], r.down ? 6 : 4, true);
+    }
 
     // you: center dot + facing wedge (always up)
     ctx.fillStyle = '#e8e2d0';
@@ -355,13 +362,14 @@ export class UI {
     }
     const g = this.game;
     const can = lab.cost == null || g.chips >= lab.cost;
-    const key = `${lab.title}|${lab.sub}|${lab.cost}|${can}`;
+    const key = `${lab.title}|${lab.sub}|${lab.cost}|${can}|${lab.progress != null ? Math.round(lab.progress * 100) : ''}`;
     if (key === this._ip) return;
     this._ip = key;
     const cost = lab.cost != null ? `<span class="ip-cost${can ? '' : ' poor'}"><i class="chip-icon"></i>${lab.cost}</span>` : '';
     const act = lab.cost != null || lab.action ? `<kbd>E</kbd>` : '';
     el.innerHTML = `<div class="ip-row">${act}<span class="ip-icon" style="--c:${lab.color || '#e8c860'}">${lab.icon || ''}</span>`
-      + `<span class="ip-title">${lab.title}</span>${cost}</div><div class="ip-sub">${lab.sub || ''}</div>`;
+      + `<span class="ip-title">${lab.title}</span>${cost}</div><div class="ip-sub">${lab.sub || ''}</div>`
+      + (lab.progress != null ? `<div class="ip-prog"><i style="width:${(lab.progress * 100).toFixed(1)}%"></i></div>` : '');
     el.classList.add('show');
   }
 
@@ -492,14 +500,40 @@ export class UI {
     layer.appendChild(arrow);
   }
 
+  // ------------------------------ the scoreboard -----------------------------
+  /** hold TAB: everyone at the table, with ping, kills, deaths, damage and chips */
+  scoreboard(on) {
+    const el = $('scoreboard');
+    if (!el) return;
+    const g = this.game;
+    const inRun = !!g.state && g.state !== 'MENU';
+    this._sbOn = on && inRun;
+    el.classList.toggle('hidden', !this._sbOn);
+    if (this._sbOn) this.renderScoreboard();
+  }
+
+  renderScoreboard() {
+    if (!this._sbOn) return;
+    const g = this.game, net = g.net;
+    const rows = net.scoreRows();
+    const pingCls = (p) => (p < 80 ? 'good' : p < 160 ? 'ok' : 'bad');
+    $('sb-sub').textContent = `ROUND ${g.round}${g.specialRound ? ` · ${g.specialRound.name}` : ''} · SEED ${Seed.text}`
+      + (net.active ? ` · ${rows.length} AT THE TABLE` : ' · PLAYING ALONE');
+    $('sb-rows').innerHTML = rows.map((r) => `<tr class="${r.me ? 'me' : ''}${r.state ? ' floored' : ''}" style="--c:${SEAT_COLOR[r.seat] || '#f4e8c8'}">`
+      + `<td class="sb-name"><i></i>${esc(r.name)}${r.seat === 0 && net.active ? ' <em>HOST</em>' : ''}${r.me ? ' <em>YOU</em>' : ''}${r.state ? ` <b>${r.state}</b>` : ''}</td>`
+      + `<td class="${pingCls(r.ping)}">${r.ping}<small> ms</small></td><td>${r.kills}</td><td>${r.deaths}</td>`
+      + `<td>${r.damage.toLocaleString()}</td><td class="sb-chips">${r.chips.toLocaleString()}</td></tr>`).join('');
+  }
+
   // ---------------------------- fps, ping, the band --------------------------
-  /** the corner readout: frames a second, and the round trip to your partner */
-  updatePerf(fps, ping, online) {
+  /** the corner readout: frames a second, and the round trip to the host.
+      mode: 'solo' | 'host' (you are the house: 0) | 'guest' */
+  updatePerf(fps, ping, mode) {
     const f = $('perf-fps'), p = $('perf-ping');
     f.textContent = `${fps} FPS`;
     f.className = fps >= 55 ? 'good' : fps >= 30 ? 'ok' : 'bad';
-    p.textContent = online ? `PING ${ping} ms` : 'PING 0 ms · SOLO';
-    p.className = !online || ping < 80 ? 'good' : ping < 160 ? 'ok' : 'bad';
+    p.textContent = mode === 'guest' ? `PING ${ping} ms` : `PING 0 ms · ${mode === 'host' ? 'HOST' : 'SOLO'}`;
+    p.className = mode !== 'guest' || ping < 80 ? 'good' : ping < 160 ? 'ok' : 'bad';
   }
 
   /** a new tune: show its name for a few seconds */

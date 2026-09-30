@@ -361,7 +361,7 @@ export class Weapons {
       return;
     }
     if (!g.rewards?.bottomless) w.mag--;             // FREE SPINS: the mag never empties
-    this.shotCount = (this.shotCount || 0) + 1;     // co-op: your partner hears it
+    this.shotCount = (this.shotCount || 0) + 1;     // co-op: your teammates hear it
     this.cooldown = w.fireInterval;
     this.kick = 1;
     const fx = GUNFX[this.currentId];

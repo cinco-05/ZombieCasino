@@ -13,7 +13,7 @@ import { STYLE, toonRim } from '../gfx/style.js';
 import { dizzyStarMaterial } from '../gfx/toonart.js';
 
 const GAITS = {
-  gambler: 'stalk', gambler2: 'stalk',
+  gambler: 'stalk', gambler2: 'stalk', gambler3: 'stalk', gambler4: 'stalk',
   walker: 'shamble', gasbag: 'shamble', collector: 'stalk',
   brute: 'lurch', pitguard: 'lurch', pitboss: 'lurch',
   sprinter: 'run', jackpot: 'run',

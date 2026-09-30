@@ -39,6 +39,7 @@ Then open `http://localhost:8000`.
 * Esc: Pause
 * F11: Fullscreen
 * F3: Debug panel
+* TAB (hold): Scoreboard
 * At the tables: H / S / D / P (hit, stand, double, split), 1–5 and Space (poker), Space and 1–3 (slots)
 
 ## Main Features
@@ -53,7 +54,8 @@ Then open `http://localhost:8000`.
 * Cocktail perks, paid doors to new wings, and the Big Six money wheel
 * Streaks, a progressive jackpot, and comps in five rarities
 * Permanent progression: the Vault, Loyalty Card tiers, Markers, and collectible chips
-* Online co-op with a friend by room code, with an FPS and ping readout in the corner (ping reads 0 when you play alone)
+* Online co-op for up to four players by room code: everyone gets their own shop, a downed teammate shows a revive icon (hold E to pick them up), and holding TAB shows everyone's ping, kills, deaths, damage and chips
+* An FPS and ping readout in the corner (ping reads 0 when you play alone)
 * Three art styles: 1930s Cartoon, 1930s Black & White, and Modern
 * A procedural jazz band playing three tunes in rotation, and 3D audio
 * Mid-run saves and local records

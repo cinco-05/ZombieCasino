@@ -206,6 +206,22 @@ test('seeds: typing is forgiving, random seeds are shareable', () => {
   assert.ok(!Seed.custom);
 });
 
+test('seeds: co-op seats each get their own deal from the one seed', () => {
+  const deal = (salt) => { Seed.begin('TABLE-4', salt); return newDeck(Seed.rng('blackjack')).map((c) => c.rank + c.suit).join(); };
+  const solo = deal('');
+  const seats = [0, 1, 2, 3].map((s) => deal(`#${s}:`));
+  assert.equal(new Set(seats).size, 4, 'every seat is dealt differently');
+  assert.ok(!seats.includes(solo));
+  assert.equal(deal('#2:'), seats[2], 'the same seat replays the same deal');
+  Seed.begin('TABLE-4');
+  assert.equal(newDeck(Seed.rng('blackjack')).map((c) => c.rank + c.suit).join(), solo, 'alone, nothing changes');
+  Seed.begin('TABLE-4', '#1:'); Seed.random('shop');
+  const saved = JSON.parse(JSON.stringify(Seed.save()));
+  const next = Seed.random('shop');
+  Seed.begin('X'); Seed.restore(saved);
+  assert.equal(Seed.random('shop'), next, 'a saved co-op seat keeps its slice');
+});
+
 test('the band: three tunes, every bar adds up to four beats', () => {
   assert.equal(SONGS.length, 3);
   const beats = (txt) => (txt || '').trim().split(/\s+/).filter(Boolean).reduce((s, tok) => s + parseFloat(tok.split(':')[1]), 0);

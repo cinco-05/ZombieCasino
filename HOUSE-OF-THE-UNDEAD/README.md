@@ -203,45 +203,66 @@ presentation. Small ones stay small.
 Nothing is bought with real money, and nothing is on a timer. The odds get
 better as you play better, and every bar only goes up.
 
-## Co-op: play with a friend
+## Co-op: play with up to four
 
-Main menu → **PLAY WITH A FRIEND**.
+Main menu → **PLAY WITH FRIENDS (UP TO 4)**.
 
+- **Your name:** type it at the top of the co-op screen. It goes over your
+  head, on the scoreboard and in the table's banners, and it's remembered.
 - **Host:** click **HOST A TABLE**. You get a 5-letter room code (COPY puts it
-  on your clipboard). Send it to your friend. When they sit down, click **DEAL
-  US IN**.
-- **Join:** type the code and click **JOIN**.
+  on your clipboard). Send it to up to three friends. The four seats fill up
+  as they sit down; click **DEAL US IN** when everyone's there. Want a
+  particular seed? Type it at the Coat Check (CHANGE CLASS) before you deal.
+- **Join:** type the code and click **JOIN**. A full table, a table already
+  mid-game, or a different build of the game turns you away and says why.
 - **Class:** each of you picks your own with CHANGE CLASS (the Coat Check).
 - Works with either version of the game (exe or the .html file), as long as
-  you both have the same build and an internet connection.
+  everyone has the same build and an internet connection.
 
 How the table works:
 
 - **The host runs the house.** The horde, bosses, rounds and drops all live on
-  the host's game. Your friend's shots, lethals and tacticals are sent over and
-  applied there. The dead go after whichever of you is closest.
+  the host's game. Everyone else's shots, lethals and tacticals are sent over
+  and applied there. The dead go after whoever is closest.
+- **Four seats, four jackets.** Seat 1 (the host) wears red, seat 2 white,
+  seat 3 green, seat 4 blue. Name tags, the radar and the scoreboard use the
+  same colors.
 - **Your own money.** Separate chips: kill money goes straight to whoever
   landed the killing blow (no racing for stacks). Ammo, health and Lady Luck
   parts on the floor go to whoever walks over them.
-- **Shared doors.** A door either of you buys opens for both.
-- **Your own everything else.** Your own shop, cocktails, Lady Luck and ALL IN.
-- **Rounds.** They start when you're both done shopping, or when the host's
+- **Your own shop.** Everyone plays the same seed, but each seat is dealt its
+  own slice of it, so your shelf, your cards, your spins and your pulls are
+  your own. Play the same seed from the same seat again and you get the same
+  deal.
+- **Shared doors.** A door anyone buys opens for everyone.
+- **Your own everything else.** Your own cocktails, Lady Luck and ALL IN.
+- **Rounds.** They start when everyone's done shopping, or when the host's
   timer runs out.
-- **Going down.** You bleed out for 30 seconds. Your partner stands over you
-  and holds **E** for 3 seconds to deal you back in at half health. Bleed out
-  and you're back next round, if your partner survives it. Both down at once
-  and the house wins. Double Down Daiquiri still revives you on its own.
+- **Going down.** You bleed out for 30 seconds. A red **REVIVE** cross floats
+  over you (through walls, the same size at any distance) and blinks on
+  everyone's radar. Any teammate who stands over you gets a **REVIVE** prompt;
+  they hold **E** for 3 seconds (a bar fills) to deal you back in at half
+  health. A revive beats anything else nearby that E would buy. Bleed out and
+  you're back next round, if the table survives it. Everyone down at once and
+  the house wins. Double Down Daiquiri still revives you on its own.
+- **The scoreboard:** hold **TAB** for everyone at the table: ping, kills,
+  deaths (every time you went down), damage dealt and chips in hand. It works
+  alone too.
+- **Ping** in the corner is your round trip to the host (the host reads 0).
 - **Pausing** doesn't stop a co-op game.
-- **If the guest leaves,** the host plays on alone. **If the host leaves,** the
-  table closes.
+- **If a guest leaves,** everyone else plays on (the host alone, if it was the
+  last one). **If the host leaves,** the table closes. A game that crashes or
+  loses its connection without saying goodbye is dropped after 45 seconds of
+  silence. Alt-tabbing is fine: the heartbeat keeps going in the background.
 
 Room codes go through the free **PeerJS** matchmaking service (0.peerjs.com).
-After that the two games talk directly, with PeerJS's free relay servers as a
-fallback for strict home networks. The library is `vendor/peerjs.min.js` (MIT,
-see `vendor/PEERJS-LICENSE.txt`). The co-op code is in `src/net.js`.
+After that each guest talks directly to the host (the host passes along what
+the others need), with PeerJS's free relay servers as a fallback for strict
+home networks. The library is `vendor/peerjs.min.js` (MIT, see
+`vendor/PEERJS-LICENSE.txt`). The co-op code is in `src/net.js`.
 
 The host should keep the game window open and on screen. A minimized browser
-or game window stops rendering, which pauses the house for both of you.
+or game window stops rendering, which pauses the house for everyone.
 
 ## Art style: 1930s cartoon
 
@@ -609,6 +630,7 @@ live with WebAudio, and every texture is painted procedurally at load.
 | Esc | pause |
 | F11 | fullscreen / window |
 | F3 | debug panel |
+| TAB (hold) | scoreboard: ping, kills, deaths, damage, chips |
 | H / S / D / P | blackjack: hit, stand, double, split |
 | 1–5, SPACE | poker: hold, draw |
 | SPACE, 1–3 | slots: pull (or stop the next reel), stop a reel |

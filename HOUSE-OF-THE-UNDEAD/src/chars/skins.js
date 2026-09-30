@@ -878,7 +878,7 @@ export const LOOKS = {
     }),
   },
 
-  // the players (co-op): living high rollers — a white dinner jacket and a red one
+  // the players (co-op): living high rollers in white, red, green and blue dinner jackets
   gambler: {
     build: 'standard', eyes: 0x1a1410, props: ['trilby'],
     outfit: () => ({
@@ -892,6 +892,22 @@ export const LOOKS = {
     outfit: () => ({
       skin: '#c58a64', hair: '#1a120c', shirt: '#f2efe6', bowtie: '#111111', living: true,
       jacket: '#b3122e', jacketOpen: false, pants: '#1a1a1e', pocketSquare: '#e8c860',
+      sleeves: 'jacket', gore: 0, propColor: '#1c1a1e',
+    }),
+  },
+  gambler3: {
+    build: 'standard', eyes: 0x1a1410, props: ['trilby'],
+    outfit: () => ({
+      skin: '#e0b090', hair: '#5a3014', shirt: '#f2efe6', bowtie: '#111111', living: true,
+      jacket: '#1f7a4a', jacketOpen: false, pants: '#1a1a1e', pocketSquare: '#f2efe6',
+      sleeves: 'jacket', gore: 0, propColor: '#1c1a1e',
+    }),
+  },
+  gambler4: {
+    build: 'standard', eyes: 0x1a1410, props: ['trilby'],
+    outfit: () => ({
+      skin: '#8a5a3c', hair: '#140c08', shirt: '#f2efe6', bowtie: '#111111', living: true,
+      jacket: '#2a4aa8', jacketOpen: false, pants: '#1a1a1e', pocketSquare: '#e8c860',
       sleeves: 'jacket', gore: 0, propColor: '#1c1a1e',
     }),
   },
