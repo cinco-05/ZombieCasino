@@ -96,6 +96,8 @@ document.addEventListener('wheel', (e) => {
 document.addEventListener('keydown', (e) => {
   // typing a class name at the Coat Check shouldn't fire off grenades
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  // at the tables: hit / stand / double / split, holds, spins and the slot arm
+  if (!e.repeat && game.casino.key(e.code)) { e.preventDefault(); return; }
   game.player.keys[e.code] = true;
   if (e.repeat) return;
   // down on the carpet: you can look and shoot, nothing else

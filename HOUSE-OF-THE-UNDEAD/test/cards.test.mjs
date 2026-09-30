@@ -1,13 +1,13 @@
 // test/cards.test.mjs — run with: npm test
 import assert from 'node:assert';
 import {
-  newDeck, handValue, isBlackjack, dealerPlay, resolveBlackjack,
+  newDeck, handValue, isBlackjack, dealerPlay, resolveBlackjack, canSplit, resolveSplitHand,
   WHEEL_ORDER, pocketColor, spinRoulette, evaluateRouletteBet,
-  spinSlots, slotPayout, SLOT_SYMBOLS,
-  spinGrid, evalSlotsGrid, SLOT_LINES,
+  REELS, SLOT_LINES, spinSlotMachine, slotWindow, slotLinePay, evalSlotWindow, slotStats,
   evaluatePokerHand, comparePoker, pokerTier, dealerHolds,
-  spinGrid5, evalSlotsGrid5, SLOT_LINES_5,
 } from '../src/cards.js';
+import { Seed, hashStr, normalizeSeed, randomSeed } from '../src/rng.js';
+import { SONGS } from '../src/audio.js';
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log('ok -', name); }
@@ -80,52 +80,6 @@ test('roulette bet evaluation', () => {
   assert.ok(evaluateRouletteBet({ type: 'single', number: 0 }, 0));
 });
 
-test('slots: reels only produce known symbols', () => {
-  const known = new Set(SLOT_SYMBOLS.map((s) => s.sym));
-  for (let i = 0; i < 300; i++) {
-    for (const s of spinSlots()) assert.ok(known.has(s));
-  }
-});
-
-test('slots payouts', () => {
-  assert.equal(slotPayout(['7', '7', '7']).chips, 400);
-  assert.equal(slotPayout(['🍒', '🍒', '🍒']).chips, 120);
-  assert.ok(slotPayout(['🔔', '🔔', '🔔']).ammo);
-  assert.equal(slotPayout(['♥', '♥', '♥']).heal, 35);
-  assert.equal(slotPayout(['💀', '💀', '💀']).hurt, 15);
-  assert.equal(slotPayout(['7', '7', '🍒']).chips, 90);
-  assert.equal(slotPayout(['7', '🍒', '♥']).chips, 0);
-});
-
-test('3x3 grid: shape and symbols valid', () => {
-  const known = new Set(SLOT_SYMBOLS.map((s) => s.sym));
-  for (let i = 0; i < 50; i++) {
-    const g = spinGrid();
-    assert.equal(g.length, 3);
-    for (const col of g) { assert.equal(col.length, 3); for (const s of col) assert.ok(known.has(s)); }
-  }
-});
-
-test('3x3 grid: 5 paylines evaluated', () => {
-  assert.equal(SLOT_LINES.length, 5);
-  // all cherries -> all 5 lines win
-  const allCherry = [['🍒','🍒','🍒'],['🍒','🍒','🍒'],['🍒','🍒','🍒']];
-  const r = evalSlotsGrid(allCherry);
-  assert.equal(r.wins.length, 5);
-  assert.equal(r.chips, 600);
-  // only middle row is sevens
-  const mid7 = [['🍒','7','♥'],['💀','7','🔔'],['♥','7','🍒']];
-  const r2 = evalSlotsGrid(mid7);
-  assert.equal(r2.wins.length, 1);
-  assert.equal(r2.wins[0].name, 'MIDDLE');
-  assert.equal(r2.chips, 400);
-  // diagonal hearts heal
-  const diag = [['♥','🍒','7'],['💀','♥','🔔'],['7','🍒','♥']];
-  const r3 = evalSlotsGrid(diag);
-  assert.equal(r3.wins.length, 1);
-  assert.equal(r3.heal, 35);
-});
-
 test('poker hand ranks', () => {
   const H = (str) => str.split(' ').map((t) => ({ rank: t.slice(0, -1), suit: t.slice(-1) }));
   assert.equal(evaluatePokerHand(H('A♠ K♦ 9♣ 5♥ 2♠')).rank, 0);
@@ -167,40 +121,102 @@ test('dealer hold logic', () => {
   assert.deepEqual(dealerHolds(H('A♠ K♦ 9♣ 5♥ 2♠')), [true, true, false, false, false]);
 });
 
-test('5x5 grid: shape, lines, symbols', () => {
-  const known = new Set(SLOT_SYMBOLS.map((s) => s.sym));
-  const g = spinGrid5();
-  assert.equal(g.length, 5);
-  for (const col of g) { assert.equal(col.length, 5); for (const s of col) assert.ok(known.has(s)); }
-  assert.equal(SLOT_LINES_5.length, 7);
+test('split: pairs and any two tens split, mixed values do not', () => {
+  const c = (rank) => ({ rank, suit: '♣' });
+  assert.ok(canSplit([c('8'), c('8')]));
+  assert.ok(canSplit([c('K'), c('10')]));
+  assert.ok(canSplit([c('A'), c('A')]));
+  assert.ok(!canSplit([c('9'), c('8')]));
+  assert.ok(!canSplit([c('8'), c('8'), c('2')]));
 });
 
-test('5x5 runs pay: 3/4/5-length multipliers', () => {
-  const col = (a) => a;   // grid[col][row]
-  // top row: 7 7 7 x x  -> 3-run of 7s = 120
-  const g1 = [col(['7','♥','💀','♥','💀']), col(['7','♥','💀','♥','💀']), col(['7','♥','💀','♥','💀']),
-              col(['🍒','♥','💀','♥','💀']), col(['🔔','♥','💀','♥','💀'])];
-  // careful: rows 1-4 also form runs of ♥/💀 — count only row 0 by breaking them up
-  const g = [['7','♥','💀','🍒','🔔'], ['7','💀','♥','🔔','🍒'], ['7','♥','💀','🍒','🔔'],
-             ['🍒','💀','♥','🔔','🍒'], ['🔔','♥','💀','🍒','🔔']];
-  const r = evalSlotsGrid5(g);
-  const row1 = r.wins.find((w) => w.name === 'ROW 1');
-  assert.ok(row1 && row1.len === 3);
-  assert.equal(row1.cells.length, 3);
-  // full row of sevens pays 10x
-  const g5 = [['7','♥','💀','🍒','🔔'], ['7','💀','♥','🔔','🍒'], ['7','♥','💀','🍒','🔔'],
-              ['7','💀','♥','🔔','🍒'], ['7','♥','💀','🍒','🔔']];
-  const r5 = evalSlotsGrid5(g5);
-  const row = r5.wins.find((w) => w.name === 'ROW 1');
-  assert.equal(row.len, 5);
-  assert.equal(r5.chips, 1200);
-  // diagonal hearts: [i][i] all ♥ -> heal
-  const gd = [['♥','💀','🍒','🔔','7'], ['💀','♥','🍒','🔔','7'], ['🍒','🔔','♥','7','💀'],
-              ['🔔','7','💀','♥','🍒'], ['7','💀','🍒','🔔','♥']];
-  const rd = evalSlotsGrid5(gd);
-  const diag = rd.wins.find((w) => w.name.startsWith('DIAG \u2198'));
-  assert.ok(diag && diag.len === 5);
-  assert.equal(rd.heal, 120);
+test('split hands: a two-card 21 is a plain 21, a dealer natural beats it', () => {
+  const c = (rank) => ({ rank, suit: '♦' });
+  assert.equal(resolveSplitHand([c('A'), c('K')], [c('10'), c('9')]), 'win');
+  assert.equal(resolveSplitHand([c('A'), c('K')], [c('10'), c('6'), c('5')]), 'push');
+  assert.equal(resolveSplitHand([c('A'), c('K')], [c('A'), c('Q')]), 'loss');
+  assert.equal(resolveSplitHand([c('10'), c('6'), c('9')], [c('10'), c('7')]), 'loss');
+  assert.equal(resolveSplitHand([c('10'), c('8')], [c('10'), c('6'), c('9')]), 'win');
+});
+
+test('slots: three reels, five lines, the glass shows three rows', () => {
+  assert.equal(REELS.length, 3);
+  assert.equal(SLOT_LINES.length, 5);
+  for (let i = 0; i < 200; i++) {
+    const w = slotWindow(spinSlotMachine());
+    assert.equal(w.length, 3);
+    for (const col of w) assert.equal(col.length, 3);
+  }
+  // the middle row is the stop itself
+  assert.equal(slotWindow([0, 0, 0])[0][1], REELS[0][0]);
+});
+
+test('slots: the paytable, wilds and cherries', () => {
+  assert.equal(slotLinePay(['seven', 'seven', 'seven']).coins, 100);
+  assert.equal(slotLinePay(['wild', 'wild', 'wild']).coins, 300);
+  assert.equal(slotLinePay(['seven', 'wild', 'seven']).coins, 200);      // a wild doubles it
+  assert.equal(slotLinePay(['wild', 'seven', 'wild']).coins, 400);       // two wilds: x4
+  assert.equal(slotLinePay(['bar1', 'bar3', 'bar2']).coins, 5);          // any bar
+  assert.equal(slotLinePay(['cherry', 'cherry', 'blank']).coins, 3);
+  assert.equal(slotLinePay(['cherry', 'blank', 'cherry']).coins, 1);     // only the first reel counts
+  assert.equal(slotLinePay(['blank', 'cherry', 'cherry']).coins, 0);
+  assert.equal(slotLinePay(['wild', 'blank', 'blank']).coins, 0);        // a lone wild isn't a cherry
+  const all7 = [['seven', 'seven', 'seven'], ['seven', 'seven', 'seven'], ['seven', 'seven', 'seven']];
+  assert.equal(evalSlotWindow(all7).coins, 500);                         // five lines of sevens
+  const hearts = [['blank', 'heart', 'blank'], ['blank', 'heart', 'blank'], ['blank', 'heart', 'blank']];
+  assert.ok(evalSlotWindow(hearts).heal);
+});
+
+test('slots: the machine pays back more than it takes, and hits often', () => {
+  const s = slotStats();
+  assert.ok(s.rtp > 1.02 && s.rtp < 1.25, `payback ${s.rtp}`);
+  assert.ok(s.hit > 0.4, `hit rate ${s.hit}`);
+  assert.ok(s.topPrize > 0.001, `top prize ${s.topPrize}`);
+});
+
+test('seeds: same seed, same deal; streams stay independent', () => {
+  Seed.begin('LUCKY-7');
+  const deckA = newDeck(Seed.rng('blackjack')).map((c) => c.rank + c.suit).join();
+  const spinA = spinSlotMachine(Seed.rng('slots')).join();
+  Seed.begin('lucky-7');                                   // typed in lowercase: same seed
+  Seed.random('shop'); Seed.random('shop');                 // another table's draws don't matter
+  assert.equal(newDeck(Seed.rng('blackjack')).map((c) => c.rank + c.suit).join(), deckA);
+  assert.equal(spinSlotMachine(Seed.rng('slots')).join(), spinA);
+  Seed.begin('LUCKY-8');
+  assert.notEqual(newDeck(Seed.rng('blackjack')).map((c) => c.rank + c.suit).join(), deckA);
+});
+
+test('seeds: a saved run picks up exactly where it left off', () => {
+  Seed.begin('SAVE-ME');
+  for (let i = 0; i < 5; i++) Seed.random('rounds');
+  const saved = JSON.parse(JSON.stringify(Seed.save()));
+  const next = [Seed.random('rounds'), Seed.random('roulette')];
+  Seed.begin('SOMETHING-ELSE');
+  Seed.restore(saved);
+  assert.deepEqual([Seed.random('rounds'), Seed.random('roulette')], next);
+  assert.equal(Seed.text, 'SAVE-ME');
+});
+
+test('seeds: typing is forgiving, random seeds are shareable', () => {
+  assert.equal(normalizeSeed('  hello world! '), 'HELLOWORLD');
+  assert.equal(normalizeSeed(''), '');
+  assert.match(randomSeed(), /^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+  assert.equal(hashStr('abc'), hashStr('abc'));
+  assert.equal(Seed.begin(''), Seed.text);
+  assert.ok(!Seed.custom);
+});
+
+test('the band: three tunes, every bar adds up to four beats', () => {
+  assert.equal(SONGS.length, 3);
+  const beats = (txt) => (txt || '').trim().split(/\s+/).filter(Boolean).reduce((s, tok) => s + parseFloat(tok.split(':')[1]), 0);
+  for (const song of SONGS) {
+    assert.equal(song.melody.length, song.chords.length, `${song.title}: a melody bar for every chord bar`);
+    for (const [i, bar] of song.melody.entries()) assert.equal(beats(bar), 4, `${song.title} bar ${i + 1}: "${bar}"`);
+    assert.equal(beats(song.end), 4, `${song.title} ending`);
+    for (const bar of song.introMelody) assert.ok(!bar || beats(bar) === 4, `${song.title} intro "${bar}"`);
+    for (const c of song.chords.join(' ').split(' ')) assert.match(c, /^[A-G][#b]?(maj7|m7b5|dim7|m7|m6|m|6|7|9)?$/, `${song.title}: chord ${c}`);
+    assert.ok(song.choruses.length >= 2);
+  }
 });
 
 console.log(`\n${passed} tests passed.`);

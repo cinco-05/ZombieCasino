@@ -124,6 +124,3 @@ export const DEFAULT_CLASSES = [
   { name: 'THE CARD SHARP', primary: 'shoe', sidearm: 'derringer', lethal: 'rope', tactical: 'clock', vice: 'quickdraw' },
   { name: 'THE MOBSTER', primary: 'tommy', sidearm: 'pistol', lethal: 'sambuca', tactical: 'eye', vice: 'packrat' },
 ];
-
-// the daily run's level field: everyone walks in with the same gear
-export const DAILY_CLASS = { name: 'THE HOUSE LOADOUT', primary: 'shotgun', sidearm: 'pistol', lethal: 'chipbomb', tactical: 'bellini', vice: 'none' };

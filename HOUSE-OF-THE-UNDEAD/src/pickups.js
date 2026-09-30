@@ -6,6 +6,7 @@ import { Audio } from './audio.js';
 import { chipStack, ammoBoxMesh, medkitMesh } from './gfx/models.js';
 import { partMesh } from './gfx/vegas.js';
 import { PARTS } from './catalog.js';
+import { Seed } from './rng.js';
 import { compMesh, collectibleMesh, COMPS } from './rewards.js';
 import { toTexture, softBlobCanvas } from './gfx/texkit.js';
 
@@ -47,7 +48,7 @@ export class Pickups {
     if (this.game.net.isGuest) return;
     const healMult = this.game.casino.roundMods.healDropMult ?? 1;
     const more = this.game.perkFx?.dropMult || 1;                 // Loose Change Liqueur
-    const r = Math.random() / more;
+    const r = Seed.random('drops') / more;
     if (r < 0.10 * healMult) {
       const g = this._wrap(medkitMesh(), pos, 0.4);
       this.list.push({ id: this.nextId++, kind: 'heal', mesh: g, amount: 20, t: 15, vy: 3 });

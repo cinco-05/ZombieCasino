@@ -1,6 +1,8 @@
 // debug.js — the F3 developer panel. Deliberately styled unlike the game UI
 // so it can't be mistaken for a player-facing feature.
 
+import { Audio } from './audio.js';
+
 export function initDebug(game) {
   const panel = document.getElementById('debug-panel');
   const rows = [
@@ -53,6 +55,7 @@ export function initDebug(game) {
     ['Offer COMMON upgrade', () => game.upgrades.offer('common')],
     ['Offer RARE upgrade', () => game.upgrades.offer('rare')],
     ['Offer LEGENDARY upgrade', () => game.upgrades.offer('legendary')],
+    ['Band: skip to the next tune', () => { Audio.nextSong(); flash(Audio.nowPlaying?.title || 'no audio yet'); }],
   ];
 
   function spawn(kind) {

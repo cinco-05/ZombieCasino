@@ -46,6 +46,77 @@ After changing the game, rebuild the shareable file with:
 powershell -ExecutionPolicy Bypass -File build-html.ps1
 ```
 
+No PowerShell? `node build-html.mjs` builds the same file.
+
+## Revamp 5: the lounge band, 3D tables, the bandit, and seeds
+
+- **A jazz band in the lounge.** The haunted music box, the drone and the
+  whispers are gone. A little combo (upright bass, piano, drums and horns)
+  swings through three tunes in rotation: **When the Saints Go Marching In**
+  (traditional, a Dixieland two-beat in F with trumpet and clarinet),
+  **Lucky Seven Shuffle** (a Kansas City riff blues in Bb on tenor sax and
+  muted trumpet) and **Last Call at the Golden Lounge** (a 32-bar ballad in Eb
+  on vibes). Every tune plays several choruses with a different lead each
+  time, a second horn on the harmony, drum fills into each chorus and a proper
+  ending, then the next one starts. The fight feeds the band: the bass starts
+  walking, the drums dig in, the tempo pushes a little. A boss gets the shout
+  chorus with brass hits. Your heartbeat only comes in when you're nearly
+  dead. The tune's name shows in the corner when it starts. Around the band,
+  the casino: slot bells, coins, the PA. (The score is in `src/audio.js`.)
+- **The tables are real tables now.** Blackjack, roulette and five card draw
+  sit on tilted 3D felt with a padded leather rail, printed felt, a chip rack,
+  a card shoe and a discard tray, and the table leans a little toward your
+  mouse. Cards are printed like a real deck (pips, court cards, the house
+  back), fly out of the shoe, and turn over in 3D. Chips stack in casino
+  colors and slide across the felt when money changes hands. Result stamps
+  land on each hand. (The felt is `src/tables.js`.)
+- **Blackjack: split.** Split any pair, any two tens included, into up to four
+  hands. Each new hand puts up the card's stake again, and you can double on
+  any first two cards, split hands included. Split aces get one card each. The
+  dealer peeks for a natural. Every hand settles on its own. Win more hands
+  than you lose and the card pays out; sweep every hand of a split for a tier
+  up. Keys: **H** hit, **S** stand, **D** double, **P** split.
+- **Roulette on a real layout.** Click the number grid or an outside bet
+  (red, black, odd, even, halves, or the green zero) and your chip slides
+  there. The wheel sits in its wooden bowl with brass diamonds; the ball
+  rattles over the frets and the dolly goes down on the winner. **SPACE**
+  spins.
+- **Five card draw** holds with a click or keys **1–5**, and shows what you're
+  holding as you go. **SPACE** draws. Your discards fly to the tray.
+- **LUCKY UNDEAD, a real one-armed bandit.** Three reels of sevens, single,
+  double and triple BARs, cherries, bells, hearts and a gold WILD, on real reel
+  strips with blanks. Every pull plays five lines. A WILD doubles its line
+  (two WILDs: ×4). Grab the arm and drag it down (or hit SPIN or **SPACE**),
+  then hit STOP (or **1–3**) to bring a reel in early. There's a chasing-bulb
+  marquee, a paytable that lights up, LED meters, and coins that rattle into
+  the tray. Pays scale with what the pull cost you. **The odds are better:**
+  it pays back about **111%** on average and hits on about **half** of all
+  pulls; 7·7·7 or three WILDs lands about once in 270. (`slotStats()` in
+  `src/cards.js` works this out by trying every stop; the unit tests keep it
+  above 100%.) Three hearts also heal you; three bells bring ammo.
+- **Reward cards tell the whole truth.** Every upgrade card shows the gun it
+  goes on, its tier (●●○), and each stat before → after, worked out from your
+  gun's real numbers with everything else you've got. For example, Hair
+  Trigger I on the Riverboat Scattergun shows FIRE RATE 1.50 → 1.68/s and
+  DAMAGE/SEC 132 → 148. Player, synergy and cursed cards show their numbers
+  too, and the downsides in red. Gun cards in the shop carry stat bars.
+  Fixed along the way: an attachment used to overwrite Devil's Reload's
+  faster reload instead of stacking with it.
+- **Seeds.** Every run is dealt from a seed, and the same seed and the same
+  choices give the same run: the same shelves in the shop, the same cards off
+  the shoe, the same spins, pulls, hordes, specials and prizes. Each system
+  draws from its own stream, so playing one table never shifts another's luck.
+  Type a seed into the box at the Coat Check (or use **🎲 PLAY A SEED** on the
+  main menu), or leave it blank for a random one. The seed is shown in the
+  shop, on the pause menu and on the summary, which has a **REPLAY THIS SEED**
+  button. RESTART keeps a seed you typed in. A saved run keeps its place in
+  every stream. In co-op, the host's seed deals for both of you.
+  (`src/rng.js`.)
+- **The Daily Run is gone.** Seeds replace it: share one with a friend instead.
+- **FPS and ping** in the top-right corner. Ping is the real round trip to
+  your co-op partner, measured once a second, and reads 0 when you play alone.
+  Settings → *Show FPS & ping* turns it off.
+
 ## The reward loop
 
 Every few seconds something reacts, every few minutes something good drops,
@@ -114,8 +185,7 @@ presentation. Small ones stay small.
   discoveries and markers climbs you through 9 tiers, each with a permanent
   perk. Bronze gives +25 starting chips; later tiers make comps last longer,
   add a starting lethal, fill the jackpot faster, start you with a free Hot
-  Hand, and so on up to THE HOUSE KNOWS YOUR NAME. (The Daily Run ignores the
-  perks: it's a level field.)
+  Hand, and so on up to THE HOUSE KNOWS YOUR NAME.
 - **Markers:** 23 achievements with visible progress (NIGHT SHIFT 87 / 100),
   each worth XP.
 - **The Commemorative Chip Set:** 12 chips found as glinting discoveries and
@@ -344,7 +414,7 @@ live with WebAudio, and every texture is painted procedurally at load.
     penalty. COMMON 45–80 (mild), RARE 100–165 (moderate), LEGENDARY 185–290
     (severe). A natural blackjack, a flush-or-better poker hand, or a
     straight-up roulette hit pays a tier up.
-  - **One-Armed Bandit** — a card of 3 or 5 prepaid pulls on the 5×5 machine.
+  - **One-Armed Bandit** — a card of 3 or 5 prepaid pulls on LUCKY UNDEAD (see Revamp 5).
   - **Supplies** — first aid, smelling salts, ammo crate, kevlar.
   - **Lethals & tacticals** — a restock of what you carry, or a new one that
     swaps in for it (the card says which).
@@ -359,12 +429,8 @@ live with WebAudio, and every texture is painted procedurally at load.
     always holds at least one card you can afford. Some shelves are great,
     some are junk — REROLL (20, +12 each time) or save your chips. Random SALE
     nights knock 30% off. Broke? The house fronts a free blackjack card.
-- **A spookier score.** The lounge jazz is gone: a detuned music box plays a
-  D harmonic-minor waltz that winds down and restarts, over a low cathedral
-  drone, bowed string clusters, deep toms, and a warped tape wobble — all in a
-  generated reverb hall. Danger speeds it up and piles on tension strings and
-  your own heartbeat; low health muffles everything; bosses bring brass stabs
-  and a tritone drone. Distant bells, whispers, creaks and screams drift by.
+- **The score** (since replaced by the jazz band in Revamp 5). Low health
+  still muffles everything.
 - **Real gun handling.** Recoil runs on damped springs, so every shot kicks,
   climbs, rolls and settles. The revolver's hammer falls and re-cocks while
   the cylinder indexes; the shotgun pumps after every shot; the rifle levers.
@@ -543,14 +609,14 @@ live with WebAudio, and every texture is painted procedurally at load.
 | Esc | pause |
 | F11 | fullscreen / window |
 | F3 | debug panel |
+| H / S / D / P | blackjack: hit, stand, double, split |
+| 1–5, SPACE | poker: hold, draw |
+| SPACE, 1–3 | slots: pull (or stop the next reel), stop a reel |
 
 ## What's in this build
 
-- **⚡ DAILY RUN**: one attempt per day, seeded from the date — everyone in the
-  world gets the same rounds, specials, objectives, card deals, and wheel
-  spins. No vault perks (level field), no mid-run saves (refreshing doesn't
-  give a retry), score = round x1000 + chips + kills x10 (+5000 for beating
-  the house). Your score shows on the menu until midnight rolls the seed
+- **🎲 SEEDS**: every run is dealt from a seed; type one in at the Coat Check
+  to play it (see Revamp 5)
 - **♾ ENDLESS MODE**: beating round 10 no longer ends the run — the floor
   reopens. Keep going with a boss every 5th round (Pit Boss or House Dealer,
   scaling up), or hit CASH OUT at any intermission to bank the win. Dying deep
@@ -574,10 +640,10 @@ live with WebAudio, and every texture is painted procedurally at load.
   teleports toward you in a purple poof), and the JACKPOT — a golden walking
   slot machine that flees; kill it inside 20 seconds for a 130-200 chip payout
   or it cashes out and leaves
-- Blackjack with dealt-in card animations, hole-card flip, and one-at-a-time
-  dealer draws; roulette with a counter-spinning ball that spirals into the
-  winning pocket, plus a history strip of past spins; win/lose glow on every
-  table
+- Blackjack with splits and doubles on 3D felt, cards dealt from the shoe,
+  hole-card flip, and one-at-a-time dealer draws; roulette on a clickable
+  layout with a counter-spinning ball that spirals into the winning pocket,
+  plus a board of past spins; a win/lose glow on every table
 - **Five card draw poker**: click cards to hold, one draw, beat the dealer —
   the card's tier sets the reward, and a flush or better bumps it a tier
 - **Special rounds** (40% chance on non-boss rounds 3+): HIGH STAKES (double
@@ -598,9 +664,8 @@ live with WebAudio, and every texture is painted procedurally at load.
   Crit Comptroller (crits refund a chip bomb), Vampire Chips (chips heal you),
   Combo Insurance (+2s combo window), Last Call (final bullet in every mag
   deals triple)
-- A **5x5 slot machine** with 7 paylines (5 rows + both diagonals, runs of
-  3+ pay), played with the pulls on a One-Armed Bandit shop card; slots can't
-  kill you
+- **LUCKY UNDEAD**, a three-reel one-armed bandit with five lines, played
+  with the pulls on a One-Armed Bandit shop card (see Revamp 5)
 - **Minimap radar**: top-left corner, rotates with your facing. Enemy dots
   colored by type (spitters green, the Debt Collector gold, brutes bigger),
   bosses as red rings, off-range threats pinned dim at the rim. Disabled by

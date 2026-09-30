@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   handValue, isBlackjack, resolveBlackjack, evaluateRouletteBet,
-  pocketColor, slotPayout, WHEEL_ORDER,
+  pocketColor, slotLinePay, slotStats, WHEEL_ORDER,
 } from '../src/cards.js';
 
 const card = (rank, suit = '♠') => ({ rank, suit });
@@ -30,7 +30,8 @@ test('European roulette uses all 37 unique pockets and zero loses even-money bet
 });
 
 test('slot payouts expose concrete rewards', () => {
-  assert.equal(slotPayout(['7', '7', '7']).chips, 777);
-  assert.equal(slotPayout(['💀', '💀', '💀']).hurt, 20);
-  assert.equal(slotPayout(['🔔', '🔔', '🍋']).ammo, true);
+  assert.equal(slotLinePay(['seven', 'seven', 'seven']).coins, 100);
+  assert.equal(slotLinePay(['heart', 'heart', 'heart']).key, 'heart');
+  assert.equal(slotLinePay(['bell', 'bell', 'bell']).key, 'bell');
+  assert.ok(slotStats().rtp > 1);
 });

@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Audio } from './audio.js';
 import { PARTS } from './catalog.js';
+import { Seed } from './rng.js';
 import { buildWorldGun } from './gfx/viewmodels.js';
 import { dieFaceUp } from './gfx/vegas.js';
 
@@ -184,7 +185,7 @@ export class Wonder {
     if (a.houseSpin) return;
     if (g.chips < price) { Audio.play('dryfire'); g.ui.prompt(`The house wheel takes ${price} chips a spin`); return; }
     // decide now, reveal when the ball drops
-    const n = Math.random() < this.greenChance() ? 0 : 1 + Math.floor(Math.random() * 36);
+    const n = Seed.random('floor') < this.greenChance() ? 0 : 1 + Seed.int('floor', 36);
     if (!a.spinHouseWheel(() => this._wheelLanded(n))) return;
     g.chips -= price;
     Audio.play('chip');
@@ -239,7 +240,7 @@ export class Wonder {
     g.ui.updateHUD();
     Audio.play('chip');
     // roll them honestly... unless the table's felt sorry for you
-    let a = 1 + Math.floor(Math.random() * 6), b = 1 + Math.floor(Math.random() * 6);
+    let a = 1 + Seed.int('floor', 6), b = 1 + Seed.int('floor', 6);
     const want = !this.has('dice') && !this.built;
     if (want && this.diceMisses >= 4) { a = 5; b = 2; }
     // throw from your end of the table toward the far wall

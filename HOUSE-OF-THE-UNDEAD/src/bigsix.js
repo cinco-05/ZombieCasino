@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Audio } from './audio.js';
 import { GUNS } from './catalog.js';
+import { Seed } from './rng.js';
 import { buildWorldGun } from './gfx/viewmodels.js';
 import { toTexture, softBlobCanvas } from './gfx/texkit.js';
 
@@ -70,7 +71,7 @@ export class BigSix {
     // pick a wedge — never a gun you're already holding
     const held = new Set(g.weapons.owned());
     const pool = b.segs.map((s, i) => i).filter((i) => !b.segs[i].gun || !held.has(b.segs[i].gun));
-    const i = pool[Math.floor(Math.random() * pool.length)];
+    const i = Seed.pick('floor', pool);
     this.result = i;
     const c = ((i + 0.5) / n) * Math.PI * 2;
     // land the wedge's center under the clapper at 12 o'clock (angle π/2), with a nudge off-center
