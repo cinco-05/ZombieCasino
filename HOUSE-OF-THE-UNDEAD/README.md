@@ -57,6 +57,53 @@ Source: **GitHub Actions**), every push to `main` publishes the game to
 game with `node build-html.mjs` and publishes it with the cover image. On the
 web, the co-op screen also hands out **invite links** (see below).
 
+## Revamp 7: soul, fun and access for everyone
+
+- **Five seconds to the fight.** A brand-new player's ENTER THE CASINO skips
+  every screen: one click, a 3-2-1, and they're on the floor with the house's
+  pick of guns. The tips teach the rest as it comes up. The Coat Check (build
+  your own class) opens from the second run on, and HOW TO PLAY waits on the
+  menu and the pause screen for anyone who wants to read.
+- **ASSIST & ACCESS** is a new page in Settings:
+  - **Assist mode: the house goes easy.** The dead hit for half. A lost bet
+    costs one step less (severe → moderate → mild), and a mild one costs
+    nothing; the shop cards and the tables say so. Once a run, playing alone,
+    a hit that would end the night becomes a **SECOND CHANCE** instead: you're
+    dealt back in at 60% health, the crowd thrown off you. And the bosses
+    forget their grudges (no extra health for past deaths).
+  - **Aim assist:** the crosshair drags a little while it's on an enemy.
+  - **Reduce motion:** much less screen shake, no head bob or strafe roll, a
+    steadier gun.
+  - Reduced flashing and the new-player tips moved here too.
+- **"Rough night?"** Two early losses in a row (round 3 or before) and the
+  summary offers assist mode with one button. It never nags once it's on, and
+  a good run (round 5 or a win) clears the count.
+- **THE EVENING GHOUL.** Every run ends with its own front page on the
+  summary: a headline about the most remarkable thing that happened (a slot
+  jackpot, eights split three times, a 24-kill streak, a round-one exit, the
+  boss who finally got you), a short story built from the run itself (kills,
+  headshots, your favorite gun, the bets you won and lost, naturals, splits,
+  straight-up numbers, your best poker hand, the slots, the friends you picked
+  up), and a quote from a witness. (`src/gazette.js`; new run stats feed it.)
+- **Things that are only here to make you smile** (`src/whimsy.js`):
+  - The neon **UNDEAD** on the main menu is a xylophone: each letter wobbles
+    under the mouse and plays a note when clicked. Spell it out, U-N-D-E-A-D,
+    and the band plays "shave and a haircut" while it rains chips.
+  - **Poke the dead** wandering behind the menu: click one and it jumps out of
+    its skin, turns round and says something ("Watch the suit, it's rented").
+  - **The casino answers back** when you shoot it: slot machines ding (and
+    sometimes go TILT, or pay out a magnificent +0), chandeliers tinkle, the
+    fountain splashes, the bottles behind the bar ring.
+  - **Leave it paused** and the dead get restless: every twelve seconds the
+    pause screen has a new complaint ("They've ordered a round of drinks. On
+    your tab.").
+  - Every menu button ticks softly under the mouse and clacks like a chip.
+- **Forgiving inputs:** a dash pressed a moment before it's ready fires the
+  instant it is; a reload pressed mid-swap reloads the new gun as soon as it's
+  up.
+- **press/PLAYTEST.md:** a one-page script for watching a non-gamer play the
+  first twenty minutes, with what should happen when.
+
 ## Revamp 6: the final polish
 
 - **HOW TO PLAY.** A four-step card (survive the round, earn chips, gamble for

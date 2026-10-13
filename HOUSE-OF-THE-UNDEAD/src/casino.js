@@ -14,7 +14,7 @@ import {
   evaluatePokerHand, comparePoker, pokerTier, dealerHolds,
 } from './cards.js';
 import { Audio } from './audio.js';
-import { Shop, TIERS, TABLE_GAMES } from './shop.js';
+import { Shop, TIERS, TABLE_GAMES, softPenalty, lossText } from './shop.js';
 import { LETHALS, TACTICALS, DRINKS } from './catalog.js';
 import { Seed } from './rng.js';
 import { SlotMachine } from './slots.js';
@@ -297,6 +297,7 @@ export class Casino {
       return;
     } else {
       Audio.play('wager_lose');
+      g.stats.wagersLost++;
       if (opts.payout) g.chips += opts.payout;   // the hands you did win still pay
       if (this.charms.insurance > 0) {
         this.charms.insurance--;
@@ -318,6 +319,12 @@ export class Casino {
       g.playerMods.markerDebt--;
       kind = kind === 'mild' ? 'moderate' : 'severe';
       g.ui.prompt('THE HOUSE REMEMBERS YOUR MARKER — penalty upgraded', 3000);
+    }
+    // assist mode: one step gentler, and a mild one is let slide
+    if (g.settings.assist) {
+      const soft = softPenalty(kind, true);
+      if (!soft) { g.ui.prompt('THE HOUSE LETS THIS ONE SLIDE — no penalty (assist)', 2600); return; }
+      kind = soft;
     }
     const p = Seed.pick('house', PENALTIES[kind]);
     if (p.compound) {
@@ -428,6 +435,7 @@ export class Casino {
     if (isBlackjack(h.cards)) {
       this._bjRevealHole();
       stamp(h.el, 'BLACKJACK!', 'win');
+      this.game.stats.naturals++;
       Audio.play('jackpot');
       setTimeout(() => this._bjFinish('blackjack', {}, 'BLACKJACK!'), 900);
       return;
@@ -549,6 +557,7 @@ export class Casino {
     const g = this.game, b = this.bj, w = this.currentWager;
     if (!b || b.busy || b.over || $('bj-split').disabled) return;
     const i = b.active, h = b.hands[i];
+    g.stats.splits++;
     if (!w.credit) {
       g.chips -= b.base;
       g.stats.gambled += b.base;
@@ -839,6 +848,7 @@ export class Casino {
     this._flash($('roulette-panel'), won ? 'win' : 'loss');
     Audio.play(won ? 'wager_win' : 'chip');
     const tierBump = won && (this.rouletteBet.type === 'single' || this.rouletteBet.type === 'green');
+    if (tierBump) this.game.stats.straightUp++;
     // green is green, whatever you bet on: the zero goes on LADY LUCK's tray
     const wd = this.game.wonder;
     if (wd) {
@@ -1012,6 +1022,8 @@ export class Casino {
     await wait(900);
     if (cmp > 0) {
       const monster = pokerTier(pe.rank) === 'legendary';
+      const st = this.game.stats;
+      if (pe.rank > st.pokerRank) { st.pokerRank = pe.rank; st.pokerBest = pe.name; }
       this._flash(panel, 'win');
       $('poker-status').textContent = `${pe.name.toUpperCase()} WINS${monster ? ' — A MONSTER HAND' : ''}`;
       flyChips(panel.querySelector('.ts-nameplate'), panel.querySelector('.ts-bank'), 6, 'green');
@@ -1072,8 +1084,8 @@ export class Casino {
     if (!w) return '';
     const T = TIERS[w.tier];
     return w.credit
-      ? `<b class="tier-${w.tier}">HOUSE CREDIT</b> — win a ${T.label.toLowerCase()} upgrade · lose: a ${w.penalty} penalty`
-      : `<b class="tier-${w.tier}">${T.label} STAKES</b> · <b>${w.amount}</b> chips on the felt — win: ${T.label.toLowerCase()} upgrade + stake ×2 · lose: ${w.penalty} penalty`;
+      ? `<b class="tier-${w.tier}">HOUSE CREDIT</b> — win a ${T.label.toLowerCase()} upgrade · lose: ${lossText(w.penalty, this.game.settings.assist)}`
+      : `<b class="tier-${w.tier}">${T.label} STAKES</b> · <b>${w.amount}</b> chips on the felt — win: ${T.label.toLowerCase()} upgrade + stake ×2 · lose: ${lossText(w.penalty, this.game.settings.assist)}`;
   }
 
   _wireStaticButtons() {

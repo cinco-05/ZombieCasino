@@ -267,6 +267,14 @@ const SFX = {
   beep:          () => tone({ type: 'square', f: 1760, peak: 0.08, a: 0.002, d: 0.08, lp: 5000 }),
   clock_stop:    () => { tone({ type: 'sine', f: 1200, f2: 90, slide: 0.9, peak: 0.25, a: 0.01, d: 1.0, wet: 0.8, warble: true }); SFX.bell(); },
   tick:          () => clack(3200, 0.08, 0.015, 0.2),
+  // the menus: a whisper of a tick on hover, a chip's clack on a click
+  ui_hover:      () => tone({ type: 'sine', f: 2100, f2: 2300, peak: 0.018, a: 0.002, d: 0.03 }),
+  ui_click:      () => { clack(2400, 0.07, 0.03, 0.05); tone({ type: 'sine', f: 900, f2: 650, peak: 0.04, a: 0.002, d: 0.05 }); },
+  // a cartoon spring: up, wobble, settle
+  boing:         () => {
+    tone({ type: 'triangle', f: 150, f2: 520, slide: 0.09, peak: 0.12, a: 0.004, d: 0.3, wet: 0.1 });
+    tone({ type: 'sine', f: 300, f2: 1040, slide: 0.09, peak: 0.05, a: 0.004, d: 0.22, t: now() + 0.01 });
+  },
   camera_flash:  () => { noise({ peak: 0.5, a: 0.001, d: 0.08, f: 6000, ft: 'highpass' }); tone({ type: 'sine', f: 5200, f2: 9000, peak: 0.05, a: 0.3, d: 0.2 }); clack(1500, 0.2, 0.04); },
   turret_deploy: () => { for (let i = 0; i < 4; i++) setTimeout(() => ctx && clack(900 + i * 300, 0.14, 0.04), i * 110); tone({ type: 'sawtooth', f: 200, f2: 800, slide: 0.5, peak: 0.06, a: 0.05, d: 0.5, lp: 1500 }); },
   turret:        () => gun(4800, 0.25, 220, 0.16, 0.08, 0.12),
@@ -838,6 +846,12 @@ export const Audio = {
 
   /** skip the band to its next tune (the debug panel) */
   nextSong() { if (ctx) { startSong(M.song + 1); M.gap = 0; M.next = now() + 0.1; } },
+
+  /** one note on one of the band's voices (the menu's xylophone title) */
+  note(m, voice = 'vibes', dur = 0.5, vel = 1) {
+    if (!ctx || ctx.state === 'suspended') return;
+    try { (HORNS[voice] || HORNS.vibes)(m, now() + 0.01, dur, vel); } catch { /* never crash on music */ }
+  },
 
   /** the band sees the run end: 'lose' gets the sad trombone (wah, wah, wah,
       waaah), 'win' gets "shave and a haircut, two bits". The tune stops where

@@ -45,7 +45,7 @@ export class Player {
     this.armor = 0;
     this.iFrames = 0;
     this.grenades = CONFIG.grenade.start;
-    this.dashCd = 0; this.dashT = 0;
+    this.dashCd = 0; this.dashT = 0; this.dashQueued = 0;
     this.aiming = false;
     this.sprintLatch = false;
     this.hurtKick = { x: 0, y: 0 };
@@ -53,7 +53,8 @@ export class Player {
   }
 
   onMouseMove(dx, dy) {
-    const s = 0.0022 * this.game.settings.sensitivity * (this.aiming ? 0.6 : 1);
+    // (aim assist: the crosshair drags a little while it's on one of them)
+    const s = 0.0022 * this.game.settings.sensitivity * (this.aiming ? 0.6 : 1) * (this.onTarget ? 0.55 : 1);
     this._lookDX = (this._lookDX || 0) + dx;     // feeds the viewmodel's look sway
     this._lookDY = (this._lookDY || 0) + dy;
     this.yaw -= dx * s;
@@ -83,7 +84,9 @@ export class Player {
   }
 
   tryDash() {
-    if (this.dashCd > 0 || this.dashT > 0) return;
+    // pressed a moment too early? it's remembered and fires the instant it's ready
+    if (this.dashCd > 0 || this.dashT > 0) { if (this.dashCd < 0.35) this.dashQueued = 0.35; return; }
+    this.dashQueued = 0;
     const dir = new THREE.Vector3();
     if (this.held('forward')) dir.add(this.forwardFlat());
     if (this.held('back')) dir.sub(this.forwardFlat());
@@ -110,6 +113,10 @@ export class Player {
     if (floored) this.keys = {};
     this.downLow = (this.downLow || 0) + ((floored ? 1.05 : 0) - (this.downLow || 0)) * Math.min(1, dt * 5);
     this.dashCd = Math.max(0, this.dashCd - dt);
+    if (this.dashQueued > 0) {
+      this.dashQueued -= dt;
+      if (this.dashCd <= 0 && this.dashT <= 0 && !floored) this.tryDash();
+    }
 
     // horizontal intent
     const dir = new THREE.Vector3();
@@ -177,17 +184,21 @@ export class Player {
       // a footstep every half cycle
       if (Math.floor(prev / Math.PI) !== Math.floor(this.bobT / Math.PI)) Audio.play(sprinting ? 'step_heavy' : 'step');
     }
-    const amp = sprinting ? 1.5 : 1;
+    const calm = g.settings.reduceMotion;                   // reduce motion: a steady camera
+    const amp = calm ? 0 : sprinting ? 1.5 : 1;
     const bob = bobbing ? Math.sin(this.bobT * 2) * 0.026 * amp : 0;
     const sideBob = bobbing ? Math.sin(this.bobT) * 0.022 * amp : 0;
-    const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) : 0;
+    const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) * (calm ? 0.3 : 1) : 0;
     const strafe = (this.held('right') ? 1 : 0) - (this.held('left') ? 1 : 0);
-    this.roll = (this.roll || 0) + ((-strafe * 0.022 + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
+    this.roll = (this.roll || 0) + ((-strafe * (calm ? 0 : 0.022) + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
     this.hurtKick = this.hurtKick || { x: 0, y: 0 };
     this.hurtKick.x *= Math.exp(-dt * 9); this.hurtKick.y *= Math.exp(-dt * 9);
     const r = this.rightFlat();
     g.camera.position.set(this.pos.x + r.x * sideBob, this.pos.y + bob - landDip - this.downLow, this.pos.z + r.z * sideBob);
     g.camera.rotation.set(this.pitch + this.hurtKick.x, this.yaw + this.hurtKick.y, this.roll + this.downLow * 0.35, 'YXZ');
+
+    // aim assist: is the crosshair on one of them right now? (drags the mouse a little)
+    this.onTarget = !!(g.settings.aimAssist && g.state === 'COMBAT' && g.weapons.aimOnEnemy());
 
     // aim zoom
     const baseFov = g.settings.fov || P.fov;
@@ -211,6 +222,7 @@ export class Player {
     if (this.hp <= 0 || this.iFrames > 0 || g.debug.invuln || g.rewards?.untouchable) return false;
     // (co-op keeps playing behind the pause menu — no hiding in there)
     if (g.state !== 'COMBAT' && !(g.net?.active && g.state === 'PAUSED' && g._stateBeforePause === 'COMBAT')) return false;
+    if (g.settings.assist) amount *= 0.5;                  // assist mode: the dead hit for half
 
     if (this.armor > 0 && !g.playerMods.armorDisabled) {   // Glass Cannon voids armor
       const absorbed = Math.min(this.armor, amount * P.armorAbsorb);
@@ -236,10 +248,11 @@ export class Player {
       const to = from.clone().sub(this.pos).setY(0).normalize();
       const f = this.forwardFlat();
       const ang = Math.atan2(f.x * to.z - f.z * to.x, f.x * to.x + f.z * to.z);   // + = to the right
-      this.hurtKick = { x: 0.06, y: -Math.sign(ang || 1) * 0.05 };
+      const k = g.settings.reduceMotion ? 0.3 : 1;
+      this.hurtKick = { x: 0.06 * k, y: -Math.sign(ang || 1) * 0.05 * k };
       g.ui.damageFrom(ang);
     } else {
-      this.hurtKick = { x: 0.08, y: 0 };
+      this.hurtKick = { x: 0.08 * (g.settings.reduceMotion ? 0.3 : 1), y: 0 };
     }
     g.post?.hit(Math.min(1, amount / 25) * (g.settings.reducedFlash ? 0.3 : 1));
 
@@ -256,6 +269,7 @@ export class Player {
       this.hp = 0;
       // DOUBLE DOWN DAIQUIRI: the house deals you back in
       if (g.perks?.tryRevive()) return true;
+      if (g.secondChance?.()) return true;                 // assist mode, once a run
       if (g.net?.active) { g.net.goDown(source?.def?.name || 'the horde'); return true; }   // co-op: bleed out, wait for a hand
       g.onPlayerDeath(source?.def?.name || 'the horde');
     }

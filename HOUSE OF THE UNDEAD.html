@@ -361,6 +361,7 @@ h2 { font-size: 28px; margin-bottom: 4px; color: var(--gold-hi); }
 .btn-gold { border-color: var(--gold); color: var(--gold-hi); }
 .small-btn { font-size: 12px; padding: 7px 12px; }
 .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.summary-actions { align-items: center; margin: 2px 0 8px; }
 
 /* shop */
 .chip-balance { color: var(--gold-hi); font-size: 18px; letter-spacing: 1px; font-weight: 700; }
@@ -966,7 +967,7 @@ body[data-art^="1930"] #upgrade-stats { color: var(--paper); text-shadow: 0 1px 
 /* settings */
 .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; width: min(560px, 88vw); text-align: left; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .setting-row input[type=range] { width: 200px; accent-color: var(--gold); }
-.setting-row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--gold); }
+.setting-row input[type=checkbox] { width: 20px; height: 20px; flex-shrink: 0; accent-color: var(--gold); }
 .setting-row select { font-family: var(--ui); font-size: 14px; background: #140a1c; color: var(--text); border: 1px solid rgba(216,178,58,0.5); padding: 6px 10px; }
 .set-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(216,178,58,0.35); width: min(560px, 88vw); margin-bottom: 4px; }
 .set-tab { flex: 1; font-family: var(--deco); font-size: 13px; letter-spacing: 2px; padding: 9px 10px; background: none; color: var(--dim);
@@ -975,6 +976,8 @@ body[data-art^="1930"] #upgrade-stats { color: var(--paper); text-shadow: 0 1px 
 .set-tab.on { color: var(--gold-hi); border-color: rgba(216,178,58,0.45); background: rgba(216,178,58,0.1); }
 .set-page { display: flex; flex-direction: column; align-items: center; gap: 0; }
 .set-page.hidden { display: none; }
+.assist-offer { margin: 6px 0 10px; padding: 10px 16px; max-width: 520px; border: 1px dashed var(--gold); border-radius: 6px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 14px; line-height: 1.5; }
+.set-blurb { width: min(560px, 88vw); text-align: left; margin: 6px 0 4px; line-height: 1.6; }
 .bind-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; width: min(560px, 88vw); margin-top: 14px; padding-bottom: 6px;
   border-bottom: 1px solid rgba(216,178,58,0.35); font-family: var(--deco); letter-spacing: 2px; color: var(--gold-hi); text-align: left; }
 .bind-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; width: min(560px, 88vw); }
@@ -1431,6 +1434,48 @@ body[data-art^="1930"] .bind-key.listening { background: #b3122e; color: var(--p
 body[data-art^="1930"] .bind-head { border-bottom-color: var(--ink, #1d130c); }
 body[data-art^="1930"] #coach kbd { color: #b3122e; border-color: rgba(29,19,12,0.55); background: rgba(255,255,255,0.35); }
 
+/* ------------------------ THE EVENING GHOUL (gazette.js) ------------------------ */
+.gazette { width: min(560px, 82vw); margin: 4px auto 12px; padding: 14px 20px 12px; text-align: left; color: #1d130c;
+  background: #efe6cf radial-gradient(rgba(60,40,20,0.08) 1px, transparent 1.2px) 0 0 / 5px 5px;
+  border: 1px solid #b8a67e; box-shadow: 0 10px 26px rgba(0,0,0,0.45), inset 0 0 40px rgba(120,90,40,0.18);
+  transform: rotate(-1.2deg); font-family: Georgia, 'Times New Roman', serif; animation: gzIn 0.7s cubic-bezier(.2,1.4,.4,1) both; }
+.gazette:empty { display: none; }
+@keyframes gzIn { from { transform: rotate(-14deg) scale(0.4); opacity: 0; } to { transform: rotate(-1.2deg) scale(1); opacity: 1; } }
+.gz-mast { font-family: var(--logo); font-weight: 900; font-size: 30px; letter-spacing: 0.06em; text-align: center; line-height: 1; color: #1d130c;
+  border-bottom: 3px double #1d130c; padding-bottom: 4px; }
+.gz-date { font-size: 10px; letter-spacing: 0.22em; text-align: center; padding: 3px 0; border-bottom: 1px solid #1d130c; margin-bottom: 8px; color: #3a2a1a; }
+.gz-head { font-family: var(--logo); font-weight: 900; font-size: 22px; line-height: 1.12; text-transform: uppercase; color: #1d130c; text-shadow: none; letter-spacing: 0.02em; margin: 2px 0 4px; }
+.gz-deck { font-style: italic; font-size: 13px; color: #4a3626; margin-bottom: 8px; line-height: 1.4; }
+.gz-story { font-size: 13px; line-height: 1.55; column-count: 2; column-gap: 18px; column-rule: 1px solid rgba(29,19,12,0.3); text-align: justify; hyphens: auto; }
+.gz-story::first-letter { font-family: var(--logo); font-weight: 900; font-size: 30px; float: left; line-height: 0.9; margin: 2px 4px 0 0; }
+.gz-quote { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(29,19,12,0.35); font-size: 13px; font-style: italic; }
+.gz-quote span { font-style: normal; font-size: 11px; letter-spacing: 0.06em; color: #5a4632; }
+@media (max-width: 640px) { .gz-story { column-count: 1; } }
+body[data-art^="1930"] .gz-head { color: #1d130c; text-shadow: none; }
+
+/* ---------------------------------- whimsy.js ---------------------------------- */
+/* the xylophone title */
+.title-main .t-undead .lt { display: inline-block; cursor: pointer; transform-origin: 50% 90%; }
+.t-undead .lt.wobble { animation: ltWobble 0.5s ease-out; }
+.t-undead .lt.boing { animation: ltBoing 0.7s cubic-bezier(.3,1.6,.5,1); }
+@keyframes ltWobble { 0% { transform: none; } 30% { transform: scale(1.06, 0.94) rotate(-3deg); } 60% { transform: scale(0.97, 1.04) rotate(2deg); } 100% { transform: none; } }
+@keyframes ltBoing {
+  0% { transform: none; } 15% { transform: scale(1.3, 0.7); } 35% { transform: translateY(-22%) scale(0.8, 1.25); }
+  55% { transform: translateY(0) scale(1.15, 0.86); } 72% { transform: scale(0.95, 1.06); } 100% { transform: none; }
+}
+/* the chip rain when someone spells it out */
+.rain-chip { position: fixed; top: -30px; z-index: 60; width: 26px; height: 26px; pointer-events: none; animation: chipRain linear both; }
+@keyframes chipRain { to { transform: translateY(calc(100vh + 60px)) rotate(var(--spin, 720deg)); } }
+/* a poked zombie's speech bubble */
+.quip { position: fixed; z-index: 15; transform: translate(-50%, -100%); max-width: 240px; padding: 8px 12px; pointer-events: none;
+  background: #fffaf0; color: #1d130c; border: 2px solid #1d130c; border-radius: 14px; font-family: var(--deco); font-weight: 600; font-size: 15px;
+  line-height: 1.3; text-align: center; box-shadow: 3px 4px 0 #1d130c; animation: quipIn 0.35s cubic-bezier(.2,1.6,.4,1) both; transition: opacity 0.3s; }
+.quip::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 14px; height: 14px; background: #fffaf0;
+  border-right: 2px solid #1d130c; border-bottom: 2px solid #1d130c; transform: translateX(-50%) rotate(45deg); }
+.quip.gone { opacity: 0; }
+@keyframes quipIn { from { transform: translate(-50%, -80%) scale(0.3); opacity: 0; } to { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .t-undead .lt.wobble, .t-undead .lt.boing, .gazette { animation: none; } .rain-chip { display: none; } }
+
 </style>
 </head>
 <body>
@@ -1629,6 +1674,7 @@ addEventListener('unhandledrejection', function (e) {
     <div class="howto-extra">
       <div><b>🤝 WITH FRIENDS</b>Up to four players. Host a table, send the invite link. Everyone gets their own shop. Hold <kbd class="hk" data-act="use">E</kbd> over a downed friend to revive them.</div>
       <div><b>🎲 SEEDS</b>Every run is dealt from a seed. Type one in at the Coat Check to replay the exact same night, or share yours.</div>
+      <div><b>♣ GOING EASY</b>Settings → ASSIST &amp; ACCESS: half damage, gentler bets and a second chance, plus aim assist and reduce motion. Nothing is locked away for using it.</div>
       <div><b>⌨ CONTROLS</b><kbd class="hk" data-act="move">WASD</kbd> move · <kbd class="hk" data-act="dash">Q</kbd> dash · <kbd class="hk" data-act="use">E</kbd> use · <kbd class="hk" data-act="reload">R</kbd> reload · <kbd class="hk" data-act="lethal">G</kbd> lethal · <kbd>ESC</kbd> pause. Rebind any key in Settings → Controls.</div>
     </div>
     <button id="btn-howto-go" class="btn btn-big">GOT IT</button>
@@ -1687,6 +1733,7 @@ addEventListener('unhandledrejection', function (e) {
     <div class="set-tabs" role="tablist">
       <button class="set-tab on" data-page="game" role="tab">PICTURE &amp; SOUND</button>
       <button class="set-tab" data-page="controls" role="tab">CONTROLS</button>
+      <button class="set-tab" data-page="assist" role="tab">ASSIST &amp; ACCESS</button>
     </div>
     <div class="set-page" data-page="game">
     <div class="setting-row"><label>Art style<br><span class="dim small">Restarts the game to apply</span></label>
@@ -1712,10 +1759,6 @@ addEventListener('unhandledrejection', function (e) {
       <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
     <div class="setting-row"><label>Show FPS &amp; ping<br><span class="dim small">Top-right corner. Ping reads 0 when you play alone</span></label>
       <input id="set-show-perf" type="checkbox" checked></div>
-    <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
-      <input id="set-reduced-flash" type="checkbox"></div>
-    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
-      <input id="set-tips" type="checkbox" checked></div>
     <div class="setting-row"><label>Display</label>
       <button id="btn-fullscreen" class="btn small-btn">TOGGLE FULLSCREEN (F11)</button>
       <button id="btn-debug-settings" class="btn small-btn">🛠 DEBUG MODE (F3)</button></div>
@@ -1733,6 +1776,19 @@ addEventListener('unhandledrejection', function (e) {
     <div id="bind-grid" class="bind-grid"></div>
     <p class="bind-fixed dim small"><kbd>LEFT MOUSE</kbd> fire · <kbd>RIGHT MOUSE</kbd> aim · <kbd>WHEEL</kbd> switch guns · <kbd>ESC</kbd> pause · <kbd>F11</kbd> fullscreen<br>At the tables: <kbd>H</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>P</kbd> blackjack · <kbd>1–5</kbd> <kbd>SPACE</kbd> poker · <kbd>SPACE</kbd> <kbd>1–3</kbd> slots</p>
     <button id="btn-binds-reset" class="btn small-btn">RESET KEYS TO DEFAULT</button>
+    </div>
+    <div class="set-page hidden" data-page="assist">
+    <p class="dim small set-blurb">Everyone deserves a night out. Turn on whatever makes it fun for you; none of it locks anything away.</p>
+    <div class="setting-row"><label>Assist mode: the house goes easy<br><span class="dim small">The dead hit for half. A lost bet costs one step less, and a mild one costs nothing. Once a run, the house deals you a SECOND CHANCE instead of a funeral. Bosses forget their grudges</span></label>
+      <input id="set-assist" type="checkbox"></div>
+    <div class="setting-row"><label>Aim assist<br><span class="dim small">The crosshair slows down a little over an enemy, so it's easier to stay on target</span></label>
+      <input id="set-aim-assist" type="checkbox"></div>
+    <div class="setting-row"><label>Reduce motion<br><span class="dim small">Much less screen shake, no head bob, a steadier gun</span></label>
+      <input id="set-reduce-motion" type="checkbox"></div>
+    <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
+      <input id="set-reduced-flash" type="checkbox"></div>
+    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
+      <input id="set-tips" type="checkbox" checked></div>
     </div>
     <button id="btn-settings-close" class="btn btn-big">DONE</button>
   </div>
@@ -1945,12 +2001,20 @@ addEventListener('unhandledrejection', function (e) {
   <div class="deco-card">
     <h1 id="summary-title">THE HOUSE WINS</h1>
     <p id="summary-cause" class="dim"></p>
+    <div id="summary-gazette" class="gazette"></div>
+    <div id="summary-assist" class="assist-offer hidden">
+      <p>Rough night? The house can go easy on you: the dead hit for half, bets cost less to lose, and you get one second chance a run.</p>
+      <button id="btn-assist-on" class="btn small-btn">♣ TURN ON ASSIST MODE</button>
+    </div>
+    <!-- (the way out sits right under the paper, where nobody has to scroll for it) -->
+    <div class="btn-row summary-actions">
+      <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
+      <button id="btn-replay-seed" class="btn">REPLAY THIS SEED</button>
+      <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
+    </div>
     <div id="summary-seed" class="seed-line"></div>
     <div id="summary-stats"></div>
     <div id="summary-progress"></div>
-    <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
-    <button id="btn-replay-seed" class="btn">REPLAY THIS SEED</button>
-    <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
   </div>
 </div>
 
@@ -56526,6 +56590,7 @@ export class Arena {
     }
     g.scale.setScalar(s);
     g.position.set(x, top - 1.9 * s, z);
+    (this.chandeliers ||= []).push({ x, y: top - 1.9 * s, z, s });   // (whimsy.js: they tinkle when shot)
     this.static.add(g);
   }
 
@@ -57743,6 +57808,14 @@ const SFX = {
   beep:          () => tone({ type: 'square', f: 1760, peak: 0.08, a: 0.002, d: 0.08, lp: 5000 }),
   clock_stop:    () => { tone({ type: 'sine', f: 1200, f2: 90, slide: 0.9, peak: 0.25, a: 0.01, d: 1.0, wet: 0.8, warble: true }); SFX.bell(); },
   tick:          () => clack(3200, 0.08, 0.015, 0.2),
+  // the menus: a whisper of a tick on hover, a chip's clack on a click
+  ui_hover:      () => tone({ type: 'sine', f: 2100, f2: 2300, peak: 0.018, a: 0.002, d: 0.03 }),
+  ui_click:      () => { clack(2400, 0.07, 0.03, 0.05); tone({ type: 'sine', f: 900, f2: 650, peak: 0.04, a: 0.002, d: 0.05 }); },
+  // a cartoon spring: up, wobble, settle
+  boing:         () => {
+    tone({ type: 'triangle', f: 150, f2: 520, slide: 0.09, peak: 0.12, a: 0.004, d: 0.3, wet: 0.1 });
+    tone({ type: 'sine', f: 300, f2: 1040, slide: 0.09, peak: 0.05, a: 0.004, d: 0.22, t: now() + 0.01 });
+  },
   camera_flash:  () => { noise({ peak: 0.5, a: 0.001, d: 0.08, f: 6000, ft: 'highpass' }); tone({ type: 'sine', f: 5200, f2: 9000, peak: 0.05, a: 0.3, d: 0.2 }); clack(1500, 0.2, 0.04); },
   turret_deploy: () => { for (let i = 0; i < 4; i++) setTimeout(() => ctx && clack(900 + i * 300, 0.14, 0.04), i * 110); tone({ type: 'sawtooth', f: 200, f2: 800, slide: 0.5, peak: 0.06, a: 0.05, d: 0.5, lp: 1500 }); },
   turret:        () => gun(4800, 0.25, 220, 0.16, 0.08, 0.12),
@@ -58315,6 +58388,12 @@ export const Audio = {
   /** skip the band to its next tune (the debug panel) */
   nextSong() { if (ctx) { startSong(M.song + 1); M.gap = 0; M.next = now() + 0.1; } },
 
+  /** one note on one of the band's voices (the menu's xylophone title) */
+  note(m, voice = 'vibes', dur = 0.5, vel = 1) {
+    if (!ctx || ctx.state === 'suspended') return;
+    try { (HORNS[voice] || HORNS.vibes)(m, now() + 0.01, dur, vel); } catch { /* never crash on music */ }
+  },
+
   /** the band sees the run end: 'lose' gets the sad trombone (wah, wah, wah,
       waaah), 'win' gets "shave and a haircut, two bits". The tune stops where
       it is, and the next one starts after a breath. */
@@ -58714,7 +58793,7 @@ export class PitBoss extends BossBase {
   constructor(game) {
     super(game, 'THE PIT BOSS',
       1400 * (1 + 0.1 * (game.round - CONFIG.minibossRound))
-           * (1 + 0.10 * Math.min(5, game.grudge?.pitboss || 0)));   // grudge: +10%/death, cap 5
+           * (game.settings.assist ? 1 : 1 + 0.10 * Math.min(5, game.grudge?.pitboss || 0)));   // grudge: +10%/death, cap 5 (assist: forgiven)
     this.kind = 'pitboss';
     if ((game.grudge?.pitboss || 0) > 0) {
       setTimeout(() => game.ui.prompt('"YOU AGAIN. STILL IN DEBT."', 2600), 2400);
@@ -58830,7 +58909,7 @@ export class HouseDealer extends BossBase {
   constructor(game) {
     super(game, 'THE HOUSE DEALER',
       3200 * (1 + 0.12 * Math.max(0, game.round - CONFIG.finalRound))   // endless scaling
-           * (1 + 0.10 * Math.min(5, game.grudge?.housedealer || 0)));  // grudge
+           * (game.settings.assist ? 1 : 1 + 0.10 * Math.min(5, game.grudge?.housedealer || 0)));  // grudge (assist: forgiven)
     this.kind = 'housedealer';
     if ((game.grudge?.housedealer || 0) > 0) {
       setTimeout(() => game.ui.prompt('"BACK FOR ANOTHER HAND? HOW PREDICTABLE."', 2600), 2400);
@@ -59269,7 +59348,7 @@ import {
   evaluatePokerHand, comparePoker, pokerTier, dealerHolds,
 } from '@hotu/src/cards.js';
 import { Audio } from '@hotu/src/audio.js';
-import { Shop, TIERS, TABLE_GAMES } from '@hotu/src/shop.js';
+import { Shop, TIERS, TABLE_GAMES, softPenalty, lossText } from '@hotu/src/shop.js';
 import { LETHALS, TACTICALS, DRINKS } from '@hotu/src/catalog.js';
 import { Seed } from '@hotu/src/rng.js';
 import { SlotMachine } from '@hotu/src/slots.js';
@@ -59552,6 +59631,7 @@ export class Casino {
       return;
     } else {
       Audio.play('wager_lose');
+      g.stats.wagersLost++;
       if (opts.payout) g.chips += opts.payout;   // the hands you did win still pay
       if (this.charms.insurance > 0) {
         this.charms.insurance--;
@@ -59573,6 +59653,12 @@ export class Casino {
       g.playerMods.markerDebt--;
       kind = kind === 'mild' ? 'moderate' : 'severe';
       g.ui.prompt('THE HOUSE REMEMBERS YOUR MARKER — penalty upgraded', 3000);
+    }
+    // assist mode: one step gentler, and a mild one is let slide
+    if (g.settings.assist) {
+      const soft = softPenalty(kind, true);
+      if (!soft) { g.ui.prompt('THE HOUSE LETS THIS ONE SLIDE — no penalty (assist)', 2600); return; }
+      kind = soft;
     }
     const p = Seed.pick('house', PENALTIES[kind]);
     if (p.compound) {
@@ -59683,6 +59769,7 @@ export class Casino {
     if (isBlackjack(h.cards)) {
       this._bjRevealHole();
       stamp(h.el, 'BLACKJACK!', 'win');
+      this.game.stats.naturals++;
       Audio.play('jackpot');
       setTimeout(() => this._bjFinish('blackjack', {}, 'BLACKJACK!'), 900);
       return;
@@ -59804,6 +59891,7 @@ export class Casino {
     const g = this.game, b = this.bj, w = this.currentWager;
     if (!b || b.busy || b.over || $('bj-split').disabled) return;
     const i = b.active, h = b.hands[i];
+    g.stats.splits++;
     if (!w.credit) {
       g.chips -= b.base;
       g.stats.gambled += b.base;
@@ -60094,6 +60182,7 @@ export class Casino {
     this._flash($('roulette-panel'), won ? 'win' : 'loss');
     Audio.play(won ? 'wager_win' : 'chip');
     const tierBump = won && (this.rouletteBet.type === 'single' || this.rouletteBet.type === 'green');
+    if (tierBump) this.game.stats.straightUp++;
     // green is green, whatever you bet on: the zero goes on LADY LUCK's tray
     const wd = this.game.wonder;
     if (wd) {
@@ -60267,6 +60356,8 @@ export class Casino {
     await wait(900);
     if (cmp > 0) {
       const monster = pokerTier(pe.rank) === 'legendary';
+      const st = this.game.stats;
+      if (pe.rank > st.pokerRank) { st.pokerRank = pe.rank; st.pokerBest = pe.name; }
       this._flash(panel, 'win');
       $('poker-status').textContent = `${pe.name.toUpperCase()} WINS${monster ? ' — A MONSTER HAND' : ''}`;
       flyChips(panel.querySelector('.ts-nameplate'), panel.querySelector('.ts-bank'), 6, 'green');
@@ -60327,8 +60418,8 @@ export class Casino {
     if (!w) return '';
     const T = TIERS[w.tier];
     return w.credit
-      ? `<b class="tier-${w.tier}">HOUSE CREDIT</b> — win a ${T.label.toLowerCase()} upgrade · lose: a ${w.penalty} penalty`
-      : `<b class="tier-${w.tier}">${T.label} STAKES</b> · <b>${w.amount}</b> chips on the felt — win: ${T.label.toLowerCase()} upgrade + stake ×2 · lose: ${w.penalty} penalty`;
+      ? `<b class="tier-${w.tier}">HOUSE CREDIT</b> — win a ${T.label.toLowerCase()} upgrade · lose: ${lossText(w.penalty, this.game.settings.assist)}`
+      : `<b class="tier-${w.tier}">${T.label} STAKES</b> · <b>${w.amount}</b> chips on the felt — win: ${T.label.toLowerCase()} upgrade + stake ×2 · lose: ${lossText(w.penalty, this.game.settings.assist)}`;
   }
 
   _wireStaticButtons() {
@@ -66437,6 +66528,7 @@ import { LETHALS, TACTICALS } from '@hotu/src/catalog.js';
 import { Seed } from '@hotu/src/rng.js';
 import { Binds } from '@hotu/src/input.js';
 import { Coach } from '@hotu/src/coach.js';
+import { Whimsy } from '@hotu/src/whimsy.js';
 import { makeEnvironment } from '@hotu/src/gfx/env.js';
 import { STYLE } from '@hotu/src/gfx/style.js';
 import { PostFX } from '@hotu/src/gfx/postfx.js';
@@ -66558,6 +66650,7 @@ export class Game {
     this.wonder = new Wonder(this);       // LADY LUCK, built from three parts
     this.allIn = new AllIn(this);         // the house's pack-a-punch
     this.coach = new Coach(this);         // the first night's tips
+    this.whimsy = new Whimsy(this);       // the xylophone title, chatty zombies, a casino that answers back
     this.loadout = null;
     this._interactables = null;
     this.interactTarget = null;
@@ -66605,7 +66698,10 @@ export class Game {
   }
 
   _freshStats() {
-    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, deaths: 0, damage: 0 };
+    // (the rest feed the night's newspaper on the summary: see src/gazette.js)
+    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, deaths: 0, damage: 0,
+      wagersLost: 0, splits: 0, naturals: 0, straightUp: 0, pokerBest: '', pokerRank: -1,
+      slotPulls: 0, slotBest: 0, slotJackpots: 0, gunKills: {}, revivesGiven: 0, secondChance: false };
   }
 
   _freshPlayerMods() {
@@ -66942,6 +67038,7 @@ export class Game {
   }
 
   _clearMenuActors() {
+    this.whimsy?.clearBubble();
     for (const c of this.menuActors || []) { this.scene.remove(c.root); c.dispose(); }
     this.menuActors = [];
   }
@@ -66960,6 +67057,8 @@ export class Game {
     for (const c of this.menuActors) {
       // wander slow circles around their spot
       const m = c.menu;
+      // (poked: it stands and talks to you for a moment)
+      if (m.hold > 0) { m.hold -= dt; c.update(dt, 0); continue; }
       m.phase += dt * m.speed * 0.4;
       const target = m.home.clone().add(new THREE.Vector3(Math.cos(m.phase) * 1.2, 0, Math.sin(m.phase) * 1.2));
       const to = target.sub(c.root.position);
@@ -66973,6 +67072,7 @@ export class Game {
       }
       c.update(dt, m.speed * 2);
     }
+    this.whimsy.updateMenu(dt);
     this.arena.update(dt);
     this.effects.update(dt);
   }
@@ -67076,6 +67176,8 @@ export class Game {
   onKill(zombie) {
     this.stats.kills++;
     this.coach.tip('chips');
+    const gun = zombie.lastCause === 'explosion' ? 'explosions' : this.weapons.current?.name;
+    if (gun) this.stats.gunKills[gun] = (this.stats.gunKills[gun] || 0) + 1;
     this.combo++;
     if (zombie.kind === 'jackpot') {
       this.ui.banner('JACKPOT CASHED OUT!', 'gold', 2000);
@@ -67101,6 +67203,8 @@ export class Game {
   _resetRun(applyPerks = true, loadout = null) {
     this.ui.hideAllPanels();
     this._clearMenuActors();
+    this.lastKiller = null;          // for the night's newspaper
+    this.cashedOut = false;
     this.loadout = { ...(loadout || this.loadout || this.coatCheck.current()) };
     this.vice = this.loadout.vice || 'none';
     this.beatHouse = false;
@@ -67400,6 +67504,7 @@ export class Game {
   }
 
   cashOut() {
+    this.cashedOut = true;
     Audio.sting('win');
     this.ui.showSummary(true, `You cashed out after round ${this.round} and walked into the sunrise.`);
   }
@@ -67431,8 +67536,18 @@ export class Game {
     Audio.play('jackpot');
   }
 
+  /** assist mode: once a run, alone, the house deals you back in instead of
+      ending the night. Returns true if it did. */
+  secondChance() {
+    if (!this.settings.assist || this.stats.secondChance || this.net.active) return false;
+    this.stats.secondChance = true;                // (in stats, so a saved run remembers it)
+    this.perks.dealBackIn(0.6, 'SECOND CHANCE — THE HOUSE COMPS YOU ONE MORE HAND');
+    return true;
+  }
+
   onPlayerDeath(cause, fromNet = false) {
     if (this.state === 'SUMMARY') return;
+    this.lastKiller = cause;
     if (this.net.active) { this.net.inRun = false; $('coop-down')?.classList.add('hidden'); }
     // the bosses hold grudges — die to one and it remembers next run
     if (cause === 'THE PIT BOSS') { this.grudge.pitboss++; this._saveGrudge(); }
@@ -67451,13 +67566,14 @@ export class Game {
   // ------------------------------- menus ------------------------------------
   _wireMenus() {
     // ENTER THE CASINO goes through the Coat Check first (pick / build a class)
-    // the very first night: the house explains itself on the way in
+    // the very first night: no forms, no lecture. One click and you're on the
+    // floor with the house's pick; the tips teach the rest as it comes up.
+    // From the second run on, the Coat Check lets you build a class first.
     $('btn-start').onclick = () => {
       Audio.init();
-      // (anyone with runs on the books already knows the house)
-      if (this.settings.seenHowTo || this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
+      if (this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
       this.ui.hide('main-menu');
-      this.ui.howTo(() => this.coatCheck.open(), 'GOT IT — TO THE COAT CHECK ▸');
+      this.newRun(this.coatCheck.current(), '');
     };
     $('btn-howto').onclick = () => { this.ui.hide('main-menu'); this.ui.howTo(() => this.ui.show('main-menu'), '◂ BACK TO THE MENU'); };
     $('btn-howto-pause').onclick = () => { this.ui.hide('pause-menu'); this.ui.howTo(() => { if (this.state === 'PAUSED') this.ui.show('pause-menu'); }, '◂ BACK'); };
@@ -67655,7 +67771,7 @@ export class Game {
 
     // screen shake: applied after all camera positioning, decays on real time
     if (this.shakeAmp > 0.002) {
-      const a = this.shakeAmp * (this.settings.reducedFlash ? 0.6 : 1);
+      const a = this.shakeAmp * (this.settings.reducedFlash ? 0.6 : 1) * (this.settings.reduceMotion ? 0.15 : 1);
       this.camera.position.x += (Math.random() - 0.5) * a;
       this.camera.position.y += (Math.random() - 0.5) * a * 0.7;
       this.camera.position.z += (Math.random() - 0.5) * a;
@@ -67665,6 +67781,150 @@ export class Game {
     this._render();
   }
 }
+</script>
+<script type="hotu/module" data-key="@hotu/src/gazette.js">// gazette.js — THE EVENING GHOUL. Every run ends with its own front page:
+// a headline picked from whatever was most remarkable about the night (a
+// sweep at the slots, eights split at the worst moment, a round-one exit, the
+// boss that finally got you), a short story built from what really happened,
+// and a word from a witness. The same night never reads quite the same twice,
+// and a bad night still gets a laugh. Pure text, no DOM: ui.js prints it.
+
+/** how the paper names whoever got you */
+const CULPRIT = {
+  WALKER: 'a shuffling regular', SPRINTER: 'a valet in a terrible hurry', BRUTE: 'a bouncer the size of a vending machine',
+  SPITTER: 'a spitter with no manners at all', GASBAG: 'a gasbag who would not stop talking', PITGUARD: 'a pit guard on overtime',
+  CROUPIER: 'a croupier with a grudge', MAGICIAN: 'a magician who never did reappear the rabbit', JACKPOT: 'a walking jackpot',
+  SHOWGIRL: 'the midnight chorus line', 'THE KING': 'The King himself', 'THE DEBT COLLECTOR': 'the Debt Collector',
+  'THE GOLDEN GAMBLER': 'the Golden Gambler', 'THE PIT BOSS': 'the Pit Boss', 'THE HOUSE DEALER': 'the House Dealer',
+};
+const culprit = (cause) => CULPRIT[String(cause || '').toUpperCase()] || (cause && !/horde|test/i.test(cause) ? String(cause).toLowerCase() : 'the horde');
+
+const WITNESSES = ['Mortimer, the night dealer', 'Bones Malone, of the craps table', 'Gravedigger Gus, a regular', 'Louie the Lid, the doorman',
+  'Sleepy Sal, the cigarette girl', 'Deadeye Delores, from the cage', 'Digby, the house pianist', 'the late Mr. Finch'];
+
+const QUOTES = {
+  win: ['I haven\'t seen the house lose like that since Prohibition.', 'Somebody check the dice. Then check them again.',
+    'They tipped the band. Nobody tips the band.', 'The boss wants a word. A long word. With lawyers.'],
+  early: ['Didn\'t even finish their drink.', 'In and out. Like a ghost, only quicker.', 'I was still shuffling the deck.',
+    'Sweet kid. Never stood a chance.'],
+  boss: ['The boss always gets paid. Always.', 'Brave. Very brave. Very, very flat.', 'You don\'t walk into his floor and walk out. Usually.'],
+  table: ['Never split tens, I told them. Never split anything.', 'The cards loved them right up until they didn\'t.',
+    'They kept saying "one more hand." I\'ve heard that before.'],
+  slots: ['That machine hasn\'t paid out since 1931. It\'s furious.', 'The bells went off and the whole floor turned around.'],
+  shooter: ['Best shooting I\'ve seen on this floor, and I\'ve seen the floor.', 'Every shot a winner. Wish I could say that about my horses.'],
+  plain: ['Nice enough. Bad with money.', 'They\'ll be back. They always come back.', 'Another night at the House. Pass the peanuts.',
+    'The band played on. The band always plays on.'],
+};
+
+const pick = (list, rng) => list[Math.floor(rng() * list.length)];
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** the gun with the most kills (null if none) */
+function favoriteGun(gunKills = {}) {
+  let best = null, n = 0;
+  for (const [gun, k] of Object.entries(gunKills)) if (k > n) { best = gun; n = k; }
+  return best ? { gun: best, n } : null;
+}
+
+/**
+ * write tonight's front page.
+ * night: { name, won, cashedOut, round, rounds, cause, chips, coop, stats }
+ * returns { masthead, dateline, headline, deck, story, quote, witness }
+ */
+export function writeGazette(night, rng = Math.random) {
+  const s = night.stats || {};
+  const who = (night.name || 'A LOCAL GAMBLER').toUpperCase();
+  const r = night.round || 1;
+  const bets = (s.wagersWon || 0) + (s.wagersLost || 0);
+  const fav = favoriteGun(s.gunKills);
+
+  // the headline: the most remarkable thing that happened, roughly in this order
+  let headline, deck, mood;
+  if (night.won && night.cashedOut) {
+    headline = pick([`${who} BREAKS THE BANK, WALKS INTO SUNRISE`, `HOUSE FOLDS; ${who} CASHES OUT`], rng);
+    deck = `Cashed out after round ${r} with ${night.chips || 0} chips; management "reviewing the cameras"`;
+    mood = 'win';
+  } else if (night.won) {
+    headline = pick([`HOUSE DEALER FOLDS; ${who} PLAYS ON INTO THE NIGHT`, `${who} BEATS THE HOUSE, THEN KEEPS GAMBLING`], rng);
+    deck = `Broke the bank, stayed for endless rounds, finally fell to ${culprit(night.cause)} on round ${r}`;
+    mood = 'win';
+  } else if (/PIT BOSS|HOUSE DEALER/i.test(night.cause || '')) {
+    headline = /PIT BOSS/i.test(night.cause) ? pick(['PIT BOSS EVICTS ANOTHER REGULAR', 'THE PIT BOSS COLLECTS'], rng)
+      : pick(['THE HOUSE DEALER CALLS IN THE MARKER', 'HOUSE DEALER: "THE HOUSE ALWAYS WINS"'], rng);
+    deck = `${who} made it to round ${r} before the management stepped in personally`;
+    mood = 'boss';
+  } else if (r <= 1) {
+    headline = pick([`NEWCOMER LASTS ONE ROUND; "I WAS LOOKING FOR THE BUFFET"`, `${who} ARRIVES, LEAVES, IN THAT ORDER`], rng);
+    deck = `Undone by ${culprit(night.cause)} before the first drink was poured`;
+    mood = 'early';
+  } else if ((s.slotJackpots || 0) > 0) {
+    headline = pick([`ONE-ARMED BANDIT LOSES ITS SHIRT TO ${who}`, `SEVENS ALL ACROSS! ${who} EMPTIES LUCKY UNDEAD`], rng);
+    deck = `${plural(s.slotJackpots, 'jackpot')} at the slots; the biggest pull paid ${s.slotBest} chips`;
+    mood = 'slots';
+  } else if ((s.splits || 0) >= 2) {
+    headline = pick([`${who} SPLITS ${s.splits} TIMES, REGRETS NOTHING`, 'LOCAL GAMBLER SPLITS EIGHTS; EIGHTS SPLIT BACK'], rng);
+    deck = `A night of bold blackjack ends on round ${r} at the hands of ${culprit(night.cause)}`;
+    mood = 'table';
+  } else if ((s.bestCombo || 0) >= 20) {
+    headline = pick([`${s.bestCombo}-KILL STREAK LEAVES CHORUS LINE SHORT-HANDED`, `${who} ON FIRE: ${s.bestCombo} IN A ROW`], rng);
+    deck = `A hot streak for the ages, until ${culprit(night.cause)} cooled things off on round ${r}`;
+    mood = 'shooter';
+  } else if ((s.headshots || 0) >= 25) {
+    headline = pick([`SHARPSHOOTER PARTS ${s.headshots} HAIRDOS`, `${who}: ${s.headshots} HEADSHOTS, NO WAITING`], rng);
+    deck = `Precision on the casino floor, right up to round ${r}`;
+    mood = 'shooter';
+  } else if ((s.wagersLost || 0) >= 3 && (s.wagersLost || 0) > (s.wagersWon || 0)) {
+    headline = pick([`${s.gambled} CHIPS VANISH AT THE TABLES; HOUSE "DELIGHTED"`, `${who} DISCOVERS THE HOUSE EDGE`], rng);
+    deck = `Lost ${plural(s.wagersLost, 'bet')}, won ${s.wagersWon}; then ${culprit(night.cause)} settled the tab`;
+    mood = 'table';
+  } else if (s.secondChance) {
+    headline = pick(['BACK FROM THE DEAD, STILL BROKE', `${who} GETS A SECOND CHANCE, USES IT UP`], rng);
+    deck = `The house dealt one more hand; ${culprit(night.cause)} dealt the last one on round ${r}`;
+    mood = 'plain';
+  } else {
+    headline = pick([`${culprit(night.cause).toUpperCase()} CLAIMS ANOTHER`, `ROUND ${r}: THE NIGHT ${who} RAN OUT OF LUCK`,
+      'ANOTHER QUIET NIGHT AT THE HOUSE OF THE UNDEAD'], rng);
+    deck = `${who} held the floor for ${plural(r, 'round')} before ${culprit(night.cause)} got the last word`;
+    mood = 'plain';
+  }
+
+  // the story: what really happened, one sentence at a time
+  const lines = [];
+  lines.push(night.won
+    ? `${who} beat the house tonight, and the house is still counting.`
+    : `${who} walked onto the floor of the House of the Undead and stayed for ${plural(r, 'round')}.`);
+  if (s.kills) {
+    lines.push(`They sent ${plural(s.kills, 'of the departed', 'of the departed')} back to their seats${s.headshots ? `, ${s.headshots} with a single clean shot` : ''}${fav && fav.gun !== 'explosions' ? `, mostly with ${titleCase(fav.gun)}` : fav ? ', mostly by blowing things up' : ''}.`);
+  } else {
+    lines.push('Witnesses agree not one of the departed was inconvenienced.');
+  }
+  if (bets) {
+    const table = `At the tables they put ${s.gambled || 0} chips on the felt and won ${s.wagersWon || 0} of ${plural(bets, 'bet')}`;
+    const extras = [];
+    if (s.naturals) extras.push(plural(s.naturals, 'natural blackjack'));
+    if (s.splits) extras.push(`${plural(s.splits, 'split')}`);
+    if (s.straightUp) extras.push(`${plural(s.straightUp, 'straight-up number')} on the wheel`);
+    if (s.pokerBest) extras.push(`a winning ${s.pokerBest.toLowerCase()} at five card draw`);
+    lines.push(`${table}${extras.length ? `, including ${listify(extras)}` : ''}.`);
+  } else {
+    lines.push('They never sat down at a table, which the dealers took personally.');
+  }
+  if (s.slotPulls) lines.push(`The slots took ${plural(s.slotPulls, 'pull')}${s.slotBest ? ` and paid as much as ${s.slotBest} chips at once` : ' and paid nothing, as is tradition'}.`);
+  if (night.coop && s.revivesGiven) lines.push(`They picked a friend up off the carpet ${plural(s.revivesGiven, 'time')}.`);
+  if (night.coop && !s.revivesGiven && (s.deaths || 0) > 0) lines.push(`Their friends picked them up off the carpet more than once. Nobody is keeping score. (Somebody is keeping score.)`);
+
+  return {
+    masthead: 'THE EVENING GHOUL',
+    dateline: `LAS VEGAS · ROUND ${r} EDITION · PRICE TWO CHIPS`,
+    headline, deck,
+    story: lines.join(' '),
+    quote: pick(QUOTES[mood] || QUOTES.plain, rng),
+    witness: pick(WITNESSES, rng),
+  };
+}
+
+function titleCase(s) { return String(s).toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase()); }
+function listify(items) { return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`; }
 </script>
 <script type="hotu/module" data-key="@hotu/src/gfx/casinotex.js">// casinotex.js — the casino's surfaces, painted procedurally: ornate carpet,
 // damask wallpaper, wood paneling, black-and-gold marble, a coffered ceiling,
@@ -73617,6 +73877,7 @@ export class Net {
       this.reviveT += Math.min(0.25, (now - this._reviveAt) / 1000) * (g.perkFx?.reload ? 1 / g.perkFx.reload : 1);
       this._reviveAt = now;
       if (this.reviveT >= REVIVE_TIME) {
+        this.game.stats.revivesGiven++;
         this.sendTo(rv.seat, { t: 'revive', from: this.mySeat });
         rv.reviveSent = performance.now();
         this.reviveT = 0; this.reviving = null;
@@ -74164,13 +74425,21 @@ export class Perks {
   // --------------------------------- going down --------------------------------
   /** called when the player's health hits zero; returns true if dealt back in */
   tryRevive() {
-    const g = this.game;
     if (!this.has('daiquiri')) return false;
     // the house deals you back in — the daiquiri is spent, everything else stays down
     this.owned = this.owned.filter((k) => k !== 'daiquiri');
     this._apply(false);
+    this.dealBackIn(1, 'DOUBLE DOWN — THE HOUSE DEALS YOU BACK IN');
+    return true;
+  }
+
+  /** back on your feet with hpFrac of your health: slow-mo, a shockwave that
+      throws the crowd off you, a banner. (The daiquiri, and assist mode's
+      SECOND CHANCE.) */
+  dealBackIn(hpFrac, banner) {
+    const g = this.game;
     const p = g.player;
-    p.hp = p.maxHp;
+    p.hp = Math.max(1, Math.round(p.maxHp * hpFrac));
     p.iFrames = 3;
     g.slowmo(1.2);
     g.addShake(0.3);
@@ -74185,9 +74454,8 @@ export class Perks {
     }
     g.effects.spawnPoof(p.pos.clone().setY(1), 0x7dff4a);
     g.effects.spawnBurst(p.pos.clone().setY(1), 0xffd060, 18, 9);
-    g.ui.banner('DOUBLE DOWN — THE HOUSE DEALS YOU BACK IN', 'cyan', 3200);
+    g.ui.banner(banner, 'cyan', 3200);
     Audio.play('revive');
-    return true;
   }
 }
 
@@ -74523,7 +74791,7 @@ export class Player {
     this.armor = 0;
     this.iFrames = 0;
     this.grenades = CONFIG.grenade.start;
-    this.dashCd = 0; this.dashT = 0;
+    this.dashCd = 0; this.dashT = 0; this.dashQueued = 0;
     this.aiming = false;
     this.sprintLatch = false;
     this.hurtKick = { x: 0, y: 0 };
@@ -74531,7 +74799,8 @@ export class Player {
   }
 
   onMouseMove(dx, dy) {
-    const s = 0.0022 * this.game.settings.sensitivity * (this.aiming ? 0.6 : 1);
+    // (aim assist: the crosshair drags a little while it's on one of them)
+    const s = 0.0022 * this.game.settings.sensitivity * (this.aiming ? 0.6 : 1) * (this.onTarget ? 0.55 : 1);
     this._lookDX = (this._lookDX || 0) + dx;     // feeds the viewmodel's look sway
     this._lookDY = (this._lookDY || 0) + dy;
     this.yaw -= dx * s;
@@ -74561,7 +74830,9 @@ export class Player {
   }
 
   tryDash() {
-    if (this.dashCd > 0 || this.dashT > 0) return;
+    // pressed a moment too early? it's remembered and fires the instant it's ready
+    if (this.dashCd > 0 || this.dashT > 0) { if (this.dashCd < 0.35) this.dashQueued = 0.35; return; }
+    this.dashQueued = 0;
     const dir = new THREE.Vector3();
     if (this.held('forward')) dir.add(this.forwardFlat());
     if (this.held('back')) dir.sub(this.forwardFlat());
@@ -74588,6 +74859,10 @@ export class Player {
     if (floored) this.keys = {};
     this.downLow = (this.downLow || 0) + ((floored ? 1.05 : 0) - (this.downLow || 0)) * Math.min(1, dt * 5);
     this.dashCd = Math.max(0, this.dashCd - dt);
+    if (this.dashQueued > 0) {
+      this.dashQueued -= dt;
+      if (this.dashCd <= 0 && this.dashT <= 0 && !floored) this.tryDash();
+    }
 
     // horizontal intent
     const dir = new THREE.Vector3();
@@ -74655,17 +74930,21 @@ export class Player {
       // a footstep every half cycle
       if (Math.floor(prev / Math.PI) !== Math.floor(this.bobT / Math.PI)) Audio.play(sprinting ? 'step_heavy' : 'step');
     }
-    const amp = sprinting ? 1.5 : 1;
+    const calm = g.settings.reduceMotion;                   // reduce motion: a steady camera
+    const amp = calm ? 0 : sprinting ? 1.5 : 1;
     const bob = bobbing ? Math.sin(this.bobT * 2) * 0.026 * amp : 0;
     const sideBob = bobbing ? Math.sin(this.bobT) * 0.022 * amp : 0;
-    const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) : 0;
+    const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) * (calm ? 0.3 : 1) : 0;
     const strafe = (this.held('right') ? 1 : 0) - (this.held('left') ? 1 : 0);
-    this.roll = (this.roll || 0) + ((-strafe * 0.022 + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
+    this.roll = (this.roll || 0) + ((-strafe * (calm ? 0 : 0.022) + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
     this.hurtKick = this.hurtKick || { x: 0, y: 0 };
     this.hurtKick.x *= Math.exp(-dt * 9); this.hurtKick.y *= Math.exp(-dt * 9);
     const r = this.rightFlat();
     g.camera.position.set(this.pos.x + r.x * sideBob, this.pos.y + bob - landDip - this.downLow, this.pos.z + r.z * sideBob);
     g.camera.rotation.set(this.pitch + this.hurtKick.x, this.yaw + this.hurtKick.y, this.roll + this.downLow * 0.35, 'YXZ');
+
+    // aim assist: is the crosshair on one of them right now? (drags the mouse a little)
+    this.onTarget = !!(g.settings.aimAssist && g.state === 'COMBAT' && g.weapons.aimOnEnemy());
 
     // aim zoom
     const baseFov = g.settings.fov || P.fov;
@@ -74689,6 +74968,7 @@ export class Player {
     if (this.hp <= 0 || this.iFrames > 0 || g.debug.invuln || g.rewards?.untouchable) return false;
     // (co-op keeps playing behind the pause menu — no hiding in there)
     if (g.state !== 'COMBAT' && !(g.net?.active && g.state === 'PAUSED' && g._stateBeforePause === 'COMBAT')) return false;
+    if (g.settings.assist) amount *= 0.5;                  // assist mode: the dead hit for half
 
     if (this.armor > 0 && !g.playerMods.armorDisabled) {   // Glass Cannon voids armor
       const absorbed = Math.min(this.armor, amount * P.armorAbsorb);
@@ -74714,10 +74994,11 @@ export class Player {
       const to = from.clone().sub(this.pos).setY(0).normalize();
       const f = this.forwardFlat();
       const ang = Math.atan2(f.x * to.z - f.z * to.x, f.x * to.x + f.z * to.z);   // + = to the right
-      this.hurtKick = { x: 0.06, y: -Math.sign(ang || 1) * 0.05 };
+      const k = g.settings.reduceMotion ? 0.3 : 1;
+      this.hurtKick = { x: 0.06 * k, y: -Math.sign(ang || 1) * 0.05 * k };
       g.ui.damageFrom(ang);
     } else {
-      this.hurtKick = { x: 0.08, y: 0 };
+      this.hurtKick = { x: 0.08 * (g.settings.reduceMotion ? 0.3 : 1), y: 0 };
     }
     g.post?.hit(Math.min(1, amount / 25) * (g.settings.reducedFlash ? 0.3 : 1));
 
@@ -74734,6 +75015,7 @@ export class Player {
       this.hp = 0;
       // DOUBLE DOWN DAIQUIRI: the house deals you back in
       if (g.perks?.tryRevive()) return true;
+      if (g.secondChance?.()) return true;                 // assist mode, once a run
       if (g.net?.active) { g.net.goDown(source?.def?.name || 'the horde'); return true; }   // co-op: bleed out, wait for a hand
       g.onPlayerDeath(source?.def?.name || 'the horde');
     }
@@ -75592,6 +75874,11 @@ export const TIERS = {
   legendary: { label: 'LEGENDARY', penalty: 'severe', range: [185, 290], cap: 1.1 },
 };
 
+/** assist mode: a lost bet costs one step less, and a mild one costs nothing (null) */
+export const softPenalty = (kind, assist) => (!assist ? kind : kind === 'severe' ? 'moderate' : kind === 'moderate' ? 'mild' : null);
+/** what losing costs, in words ("a moderate penalty", "nothing (assist)") */
+export const lossText = (kind, assist) => { const k = softPenalty(kind, assist); return k ? `${k} penalty` : 'no penalty (assist)'; };
+
 const SUPPLIES = {
   heal:     { name: 'FIRST AID', icon: '✚', desc: '+35 health, right now.', range: [35, 60] },
   fullheal: { name: 'SMELLING SALTS', icon: '♥', desc: 'Back to full health.', range: [90, 140] },
@@ -75728,7 +76015,7 @@ export class Shop {
         type: c.credit ? 'HOUSE CREDIT' : 'TABLE',
         badge: T.label, icon: G.icon, name: G.name,
         desc: G.blurb,
-        terms: `<b>Win:</b> ${T.label.toLowerCase()} upgrade${c.credit ? '' : ', stake ×2'}<br><b>Lose:</b> ${T.penalty} penalty`,
+        terms: `<b>Win:</b> ${T.label.toLowerCase()} upgrade${c.credit ? '' : ', stake ×2'}<br><b>Lose:</b> ${lossText(T.penalty, this.game.settings.assist)}`,
       };
     }
     if (c.kind === 'slots') {
@@ -76086,6 +76373,10 @@ export class SlotMachine {
     const res = evalSlotWindow(win);
     const chips = this.chipsFor(res.coins);
     this.spinning = false;
+    const st = g.stats;
+    st.slotPulls++;
+    st.slotBest = Math.max(st.slotBest, chips);
+    if (res.wins.some((w) => w.key === 'wild' || w.key === 'seven')) st.slotJackpots++;
     // light the winning symbols and lines
     for (const w of res.wins) {
       w.rows.forEach((row, reel) => {
@@ -76362,6 +76653,7 @@ import { LOYALTY, MARKERS, CHIPS } from '@hotu/src/progress.js';
 import { Seed } from '@hotu/src/rng.js';
 import { SEAT_COLOR } from '@hotu/src/net.js';
 import { ACTIONS, Binds, RESERVED } from '@hotu/src/input.js';
+import { writeGazette } from '@hotu/src/gazette.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -76909,8 +77201,10 @@ export class UI {
       invertY: saved.invertY ?? false,
       aimToggle: saved.aimToggle ?? false,
       sprintToggle: saved.sprintToggle ?? false,
-      seenHowTo: saved.seenHowTo ?? false,
       tips: saved.tips ?? true,
+      assist: saved.assist ?? false,
+      aimAssist: saved.aimAssist ?? false,
+      reduceMotion: saved.reduceMotion ?? false,
     };
     // Ultra arrived after some saves already said 'high': upgrade those once on a
     // strong card (the frame-rate watchdog still steps it back if it struggles)
@@ -76940,6 +77234,9 @@ export class UI {
     $('set-aim-mode').value = g.settings.aimToggle ? 'toggle' : 'hold';
     $('set-sprint-mode').value = g.settings.sprintToggle ? 'toggle' : 'hold';
     $('set-tips').checked = g.settings.tips !== false;
+    $('set-assist').checked = g.settings.assist;
+    $('set-aim-assist').checked = g.settings.aimAssist;
+    $('set-reduce-motion').checked = g.settings.reduceMotion;
 
     const apply = () => {
       g.settings.sensitivity = parseFloat($('set-sensitivity').value);
@@ -76958,6 +77255,9 @@ export class UI {
       const tips = $('set-tips').checked;
       if (tips && g.settings.tips === false) g.coach?.reset();          // back on: every tip again
       g.settings.tips = tips;
+      g.settings.assist = $('set-assist').checked;
+      g.settings.aimAssist = $('set-aim-assist').checked;
+      g.settings.reduceMotion = $('set-reduce-motion').checked;
       if (!g.settings.aimToggle && g.player) g.player.aiming = false;
       if (!g.settings.sprintToggle && g.player) g.player.sprintLatch = false;
       const q = $('set-quality').value;
@@ -76969,7 +77269,7 @@ export class UI {
       this.saveSettings();
     };
     for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality',
-      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips']) {
+      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips', 'set-assist', 'set-aim-assist', 'set-reduce-motion']) {
       $(id).addEventListener('input', apply);
       $(id).addEventListener('change', apply);
     }
@@ -76979,6 +77279,14 @@ export class UI {
       tab.onclick = () => this.settingsPage(tab.dataset.page);
     }
     this._wireBinds();
+    // the summary's "rough night?" offer: one click turns assist on
+    $('btn-assist-on').onclick = () => {
+      $('set-assist').checked = true;
+      apply();
+      $('btn-assist-on').textContent = '✓ ASSIST MODE IS ON (SETTINGS → ASSIST & ACCESS)';
+      $('btn-assist-on').disabled = true;
+      Audio.play('wager_win');
+    };
     apply();
   }
 
@@ -77050,16 +77358,27 @@ export class UI {
     this.renderControlsHint();
   }
 
+  /** THE EVENING GHOUL: tonight's front page, from what really happened */
+  printGazette(won) {
+    const g = this.game;
+    const paper = writeGazette({
+      name: g.net.name, won, cashedOut: g.cashedOut, round: g.round, cause: g.lastKiller,
+      chips: g.chips, coop: g.mode === 'coop', stats: g.stats,
+    });
+    $('summary-gazette').innerHTML = `<div class="gz-mast">${paper.masthead}</div><div class="gz-date">${paper.dateline}</div>`
+      + `<h3 class="gz-head">${esc(paper.headline)}</h3><div class="gz-deck">${esc(paper.deck)}</div>`
+      + `<p class="gz-story">${esc(paper.story)}</p><p class="gz-quote">"${esc(paper.quote)}" <span>— ${esc(paper.witness)}</span></p>`;
+    Audio.play('card');
+  }
+
   /** HOW TO PLAY: the four-step card. then() runs when they're done reading */
   howTo(then, label = 'GOT IT') {
-    const g = this.game;
     for (const el of document.querySelectorAll('#howto-panel .hk')) {
       el.textContent = el.dataset.act === 'move' ? Binds.moveLabel() : Binds.label(el.dataset.act);
     }
     $('btn-howto-go').textContent = label;
     $('btn-howto-go').onclick = () => { this.hide('howto-panel'); then?.(); };
     this.show('howto-panel');
-    if (!g.settings.seenHowTo) { g.settings.seenHowTo = true; this.saveSettings(); }
   }
 
   /** the key list on the main menu, from the live binds */
@@ -77199,6 +77518,7 @@ export class UI {
     $('summary-title').textContent = won ? 'YOU BEAT THE HOUSE' : 'THE HOUSE WINS';
     $('summary-title').className = won ? 'gold' : 'red';
     $('summary-cause').textContent = cause;
+    this.printGazette(won);
     $('summary-stats').innerHTML = `
       <div>Rounds survived: <b>${g.round}</b> / ${CONFIG.rounds}</div>
       <div>Zombies destroyed: <b>${g.stats.kills}</b></div>
@@ -77216,6 +77536,14 @@ export class UI {
       })()}</b> chips (${Math.round(this._lastDeposit.rate * 100)}% cut) — vault holds ${g.vault.banked}</div>`;
     $('summary-seed').innerHTML = `SEED <b>${Seed.text}</b>${Seed.custom ? ' <span class="dim">(your pick)</span>' : ''}`;
     $('btn-replay-seed').classList.toggle('hidden', g.mode === 'coop');
+    // two early nights in a row: offer the assist, once, without nagging
+    let rough = 0;
+    try { rough = Number(localStorage.getItem('hotu_rough_v1')) || 0; } catch { /* private mode */ }
+    rough = !won && g.round <= 3 ? rough + 1 : (won || g.round >= 5 ? 0 : rough);
+    try { localStorage.setItem('hotu_rough_v1', String(rough)); } catch { /* private mode */ }
+    $('summary-assist').classList.toggle('hidden', !(rough >= 2 && !g.settings.assist && g.mode !== 'coop'));
+    $('btn-assist-on').disabled = false;
+    $('btn-assist-on').textContent = '♣ TURN ON ASSIST MODE';
     this.saveRunResult(won, g.round, g.chips, g.stats.kills);
     g.rewards.clearPresentation();
     this._summaryProgress();
@@ -77942,6 +78270,7 @@ export class Weapons {
     this.switchT = 0;
     this.pendingSlot = -1;
     this.drinkT = 0;
+    this.reloadQueued = false;
     this.clearShots();
     this._refreshViewmodel();
   }
@@ -78234,6 +78563,20 @@ export class Weapons {
       .normalize();
   }
 
+  /** aim assist: is the crosshair resting on a live one (with no wall in between)? */
+  aimOnEnemy() {
+    const g = this.game;
+    const dir = new THREE.Vector3(0, 0, -1).applyEuler(g.camera.rotation);
+    const wall = g.arena.rayHit(g.camera.position, dir, 45);
+    this.raycaster.set(g.camera.position, dir);
+    this.raycaster.far = wall ? wall.dist : 45;
+    for (const hit of this.raycaster.intersectObjects(g.enemies.hitMeshes(), false)) {
+      const ref = hit.object.userData.ref;
+      if (ref && !ref.dead) return true;
+    }
+    return false;
+  }
+
   /** hitscan: stops at the first wall; pierce > 1 carries on through bodies */
   _fireRay(w, spread, dmgMult = 1) {
     const g = this.game;
@@ -78256,6 +78599,7 @@ export class Weapons {
     }
     const end = last && seen.size >= pierce ? last.distance : wallD;
     this._tracer(dir, end);
+    if (!(last && seen.size >= pierce)) g.whimsy?.shot(g.camera.position, dir, end);   // the casino answers back
     if (wall && !(last && seen.size >= pierce)) g.effects.spawnImpact(wall.point.addScaledVector(wall.normal, 0.02), wall.normal);
   }
 
@@ -78514,7 +78858,10 @@ export class Weapons {
   // ------------------------------ reload ------------------------------------
   startReload() {
     const w = this.current;
-    if (this.reloading || this.switchT > 0 || this.drinkT > 0 || w.mag >= w.magSize || w.reserve <= 0) return;
+    // mid-swap? remembered, and the new gun reloads as soon as it's up
+    if (this.switchT > 0 || this.drinkT > 0) { this.reloadQueued = true; return; }
+    this.reloadQueued = false;
+    if (this.reloading || w.mag >= w.magSize || w.reserve <= 0) return;
     this.reloading = true;
     this.reloadT = 0;
     this.anim.startReload(this.currentId, Math.min(w.magSize - w.mag, w.reserve), w.reloadTime);
@@ -78698,6 +79045,7 @@ export class Weapons {
     // full-auto
     if (this.triggerHeld && this.current.def.auto) this.tryFire();
 
+    if (this.reloadQueued && this.switchT <= 0 && this.drinkT <= 0) this.startReload();
     // ---- weapon switch: drop, swap at the bottom, rise ----
     let switchProg = 0;
     if (this.switchT > 0) {
@@ -78746,7 +79094,7 @@ export class Weapons {
 
     // ---- walk sway (figure-eight) + idle breathing ----
     this.kick = Math.max(0, this.kick - dt * 8);
-    const run = sprinting ? 1.7 : 1;
+    const run = (sprinting ? 1.7 : 1) * (g.settings.reduceMotion ? 0.3 : 1);   // reduce motion: a steadier gun
     const swayX = moving ? Math.sin(g.player.bobT) * 0.013 * run : 0;
     const swayY = moving ? -Math.abs(Math.cos(g.player.bobT)) * 0.012 * run : 0;
     const breathe = Math.sin(performance.now() / 640) * 0.006;
@@ -78807,6 +79155,303 @@ export class Weapons {
 }
 
 export { GUNFX };
+</script>
+<script type="hotu/module" data-key="@hotu/src/whimsy.js">// whimsy.js — things that are only here to make you smile. None of it changes
+// a single number in the game.
+//
+//  · The neon UNDEAD on the main menu is a xylophone: hover a letter and it
+//    wobbles, click it and it plays a note. Spell it out, U-N-D-E-A-D, and the
+//    band answers and it rains chips.
+//  · The dead wandering behind the menu can be poked. Click one: it jumps out
+//    of its skin and says something.
+//  · Shoot the casino and it answers: slot machines ding (and now and then
+//    TILT, or pay out a magnificent +0), chandeliers tinkle, the fountain
+//    splashes, the bottles behind the bar ring.
+//  · Leave the game paused and the dead get restless.
+//  · Every menu button ticks under the mouse and clacks like a chip.
+
+import * as THREE from 'three';
+import { Audio } from '@hotu/src/audio.js';
+
+const $ = (id) => document.getElementById(id);
+
+const QUIPS = [
+  'Spare a chip, pal?', 'I\'m up! I\'m up!', 'Is this the line for the buffet?', 'Don\'t tell the Pit Boss I\'m on break.',
+  'Hot streak. Since 1931.', 'Watch the suit, it\'s rented.', 'Boo. Sorry. Reflex.', 'Have you tried the shrimp cocktail? Don\'t.',
+  'I\'d tip, but my hand keeps falling off.', 'Hit me. No, not like that.', 'I\'m not dead, I\'m on a losing streak.',
+  'The band only knows three songs. I\'ve counted.', 'Personal space, please. I\'m decomposing.', 'You lookin\' at my chips?',
+  'Back in my day, the slots took nickels.', 'Shh. I\'m counting cards. Badly.',
+];
+
+const PAUSE_LINES = [
+  'The zombies wait politely.', 'The zombies are checking their watches.', 'One of them has started a crossword.',
+  'They\'ve ordered a round of drinks. On your tab.', 'A small card game has broken out.', 'Somebody\'s teaching the brute to waltz.',
+  'They\'re taking bets on whether you\'re coming back.', 'The odds are not in your favor. They checked.',
+];
+
+// U  N  D  E  A  D  — a little vibraphone arpeggio
+const TITLE_NOTES = [72, 76, 79, 81, 84, 88];
+
+export class Whimsy {
+  constructor(game) {
+    this.game = game;
+    this.bubble = null;      // { el, actor, t }
+    this.propsT = new Map(); // a prop's cooldown, so a shotgun blast is one ding
+    this._typed = [];
+    this._wireTitle();
+    this._wireButtons();
+    this._wireMenuPoke();
+    this._wirePause();
+  }
+
+  // ------------------------------- the title ---------------------------------
+  _wireTitle() {
+    const word = document.querySelector('#main-menu .t-undead');
+    if (!word) return;
+    word.innerHTML = [...word.textContent].map((ch, i) => `<span class="lt" data-i="${i}">${ch}</span>`).join('');
+    word.addEventListener('pointerover', (e) => {
+      const lt = e.target.closest('.lt');
+      if (lt) this._wobble(lt, 'wobble');
+    });
+    word.addEventListener('click', (e) => {
+      const lt = e.target.closest('.lt');
+      if (!lt) return;
+      Audio.init();
+      const i = +lt.dataset.i;
+      this._wobble(lt, 'boing');
+      Audio.note(TITLE_NOTES[i] ?? 72, 'vibes', 0.6, 1.2);
+      // spell it out: U, N, D, E, A, D in order
+      this._typed = [...this._typed, i].slice(-6);
+      if (this._typed.join() === '0,1,2,3,4,5') { this._typed = []; this._encore(word); }
+    });
+  }
+
+  _wobble(el, cls) {
+    el.classList.remove('wobble', 'boing');
+    void el.offsetWidth;        // restart the animation
+    el.classList.add(cls);
+  }
+
+  /** they spelled UNDEAD: the band plays them out and it rains chips */
+  _encore(word) {
+    Audio.sting('win');
+    for (const lt of word.querySelectorAll('.lt')) setTimeout(() => this._wobble(lt, 'boing'), +lt.dataset.i * 70);
+    const colors = ['red', 'black', 'green', 'purple', 'white'];
+    for (let i = 0; i < 46; i++) {
+      const c = document.createElement('i');
+      c.className = `chip rain-chip ${colors[i % colors.length]}`;
+      c.style.left = `${Math.random() * 100}vw`;
+      c.style.animationDelay = `${Math.random() * 1.2}s`;
+      c.style.animationDuration = `${1.6 + Math.random() * 1.4}s`;
+      c.style.setProperty('--spin', `${(Math.random() - 0.5) * 1440}deg`);
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4600);
+    }
+  }
+
+  // ------------------------------ the buttons --------------------------------
+  _wireButtons() {
+    const SEL = '.menu-item, .btn, .tbtn, .set-tab, .bind-key, .stop-btn, .spin-btn';
+    let last = null, lastT = 0;
+    document.addEventListener('pointerover', (e) => {
+      const b = e.target.closest?.(SEL);
+      if (!b || b === last || b.disabled) { if (!b) last = null; return; }
+      last = b;
+      const t = performance.now();
+      if (t - lastT > 45) { lastT = t; Audio.play('ui_hover'); }
+    });
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.(SEL);
+      if (b && !b.disabled) Audio.play('ui_click');
+    }, true);
+  }
+
+  // --------------------------- the dead on the menu ----------------------------
+  /** the menu zombie nearest a screen point (within reach), if any */
+  _actorAt(x, y) {
+    const g = this.game;
+    let best = null, bd = 80;
+    const v = new THREE.Vector3();
+    for (const c of g.menuActors || []) {
+      v.copy(c.root.position);
+      v.y += 1.35 * c.root.scale.y;
+      v.project(g.camera);
+      if (v.z > 1) continue;
+      const sx = (v.x * 0.5 + 0.5) * innerWidth, sy = (-v.y * 0.5 + 0.5) * innerHeight;
+      const d = Math.hypot(sx - x, sy - y);
+      if (d < bd) { bd = d; best = c; }
+    }
+    return best;
+  }
+
+  _wireMenuPoke() {
+    const menu = $('main-menu');
+    if (!menu) return;
+    const open = (e) => !e.target.closest('button, input, select, a, .menu-column, .menu-controls');
+    menu.addEventListener('mousemove', (e) => {
+      menu.style.cursor = open(e) && this._actorAt(e.clientX, e.clientY) ? 'pointer' : '';
+    });
+    menu.addEventListener('click', (e) => {
+      if (!open(e)) return;
+      const c = this._actorAt(e.clientX, e.clientY);
+      if (c) this.poke(c);
+    });
+  }
+
+  /** a poked zombie jumps out of its skin, turns round and says something */
+  poke(c) {
+    Audio.init();
+    Audio.play('boing');
+    c.menu.hop = 0.55;
+    c.menu.base ??= c.root.scale.x;
+    const cam = this.game.camera.position;
+    c.root.rotation.y = Math.atan2(cam.x - c.root.position.x, cam.z - c.root.position.z);
+    this.bubble?.el.remove();
+    const el = document.createElement('div');
+    el.className = 'quip';
+    let q;
+    do { q = QUIPS[Math.floor(Math.random() * QUIPS.length)]; } while (q === this._lastQuip && QUIPS.length > 1);
+    this._lastQuip = q;
+    el.textContent = q;
+    document.body.appendChild(el);
+    this.bubble = { el, actor: c, t: 2.2 + q.length * 0.03 };
+    c.menu.hold = this.bubble.t;                       // it stands still while it talks
+    this._placeBubble();
+  }
+
+  /** the bubble goes the moment the menu does (a run starting, a panel opening) */
+  clearBubble() {
+    this.bubble?.el.remove();
+    this.bubble = null;
+  }
+
+  _placeBubble() {
+    const b = this.bubble;
+    if (!b) return;
+    const v = b.actor.root.position.clone();
+    v.y += 2.15 * b.actor.root.scale.y;
+    v.project(this.game.camera);
+    b.el.style.left = `${(v.x * 0.5 + 0.5) * innerWidth}px`;
+    b.el.style.top = `${(-v.y * 0.5 + 0.5) * innerHeight}px`;
+  }
+
+  /** per frame on the menu: hops, and the speech bubble following its zombie */
+  updateMenu(dt) {
+    for (const c of this.game.menuActors || []) {
+      const m = c.menu;
+      if (!m?.hop) continue;
+      m.hop = Math.max(0, m.hop - dt);
+      const k = 1 - m.hop / 0.55;                          // 0 → 1 over the hop
+      c.root.position.y = Math.sin(k * Math.PI) * 0.55;
+      const squash = k < 0.15 ? 1 - k * 2 : 1 + Math.sin(k * Math.PI) * 0.12;
+      c.root.scale.set(m.base / Math.sqrt(squash), m.base * squash, m.base / Math.sqrt(squash));
+      if (!m.hop) { c.root.position.y = 0; c.root.scale.setScalar(m.base); }
+    }
+    const b = this.bubble;
+    if (b) {
+      b.t -= dt;
+      this._placeBubble();
+      if (b.t < 0.3) b.el.classList.add('gone');
+      if (b.t <= 0 || this.game.state !== 'MENU' || $('main-menu').classList.contains('hidden')) this.clearBubble();
+    }
+  }
+
+  // ------------------------------- the pause -----------------------------------
+  _wirePause() {
+    const line = document.querySelector('#pause-menu .deco-card > p.dim');
+    if (!line) return;
+    let n = 0;
+    setInterval(() => {
+      const paused = this.game.state === 'PAUSED' && !$('pause-menu').classList.contains('hidden');
+      if (!paused) { if (n) { n = 0; line.textContent = PAUSE_LINES[0]; } return; }
+      n++;
+      // a new complaint every twelve seconds
+      if (n % 12 === 0) line.textContent = PAUSE_LINES[Math.min(PAUSE_LINES.length - 1, n / 12)];
+    }, 1000);
+  }
+
+  // --------------------------- the casino answers back ---------------------------
+  _props() {
+    if (this._list) return this._list;
+    const a = this.game.arena, list = [];
+    for (const [bx, bz] of a.bankPositions || []) {
+      const ry = Math.atan2(-bx, -bz);
+      for (let i = -1; i <= 1; i++) {
+        const lx = i * 1.3;
+        // (slack: a bank's collision box takes in the stools, so a shot at a machine stops short of its face)
+        list.push({ kind: 'slot', c: new THREE.Vector3(bx + lx * Math.cos(ry), 1.5, bz - lx * Math.sin(ry)), r: 0.75, slack: 2.2 });
+      }
+    }
+    for (const ch of a.chandeliers || []) list.push({ kind: 'chandelier', c: new THREE.Vector3(ch.x, ch.y + 0.35 * ch.s, ch.z), r: 1.7 * ch.s });
+    list.push({ kind: 'fountain', c: new THREE.Vector3(0, 0.75, 14), r: 3.1 });
+    list.push({ kind: 'bottles', box: [-28.4, 2.0, 29.5, -19.6, 4.4, 30.4] });
+    list.forEach((p, i) => { p.id = i; });
+    this._list = list;
+    return list;
+  }
+
+  /** a shot that got as far as `dist` along dir: did it hit something that answers? */
+  shot(o, d, dist) {
+    let hit = null, best = Infinity;
+    for (const p of this._props()) {
+      const t = p.box ? rayBox(o, d, p.box) : raySphere(o, d, p.c, p.r);
+      if (t != null && t < dist + (p.slack ?? 0.4) && t < best) { best = t; hit = p; }
+    }
+    if (!hit) return;
+    const now = performance.now();
+    if ((this.propsT.get(hit.id) || 0) > now) return;
+    this.propsT.set(hit.id, now + 260);
+    const g = this.game;
+    const at = o.clone().addScaledVector(d, best);           // (on the machine's face, not the stools' box)
+    switch (hit.kind) {
+      case 'slot': {
+        g.audioAt(Math.random() < 0.5 ? 'reel_stop' : 'ambient_chime', at);
+        g.effects.spawnBurst(at, 0xffd24a, 8, 3.5);
+        const r = Math.random();
+        if (r < 0.06) { g.ui.floatText(at, '+0', 'chips'); g.audioAt('coins', at); }       // the house always wins
+        else if (r < 0.3) g.ui.floatText(at, 'TILT!', 'dmg crit');
+        break;
+      }
+      case 'chandelier':
+        g.audioAt('glass_clink', at);
+        setTimeout(() => g.audioAt('glass_clink', at), 90);
+        g.effects.spawnBurst(at, 0xd8f4ff, 10, 2.5, 6);
+        break;
+      case 'fountain':
+        g.audioAt('splash', at);
+        g.effects.spawnBurst(at.setY(Math.max(at.y, 0.8)), 0x27d6ff, 12, 4);
+        if (Math.random() < 0.15) g.ui.floatText(at, 'SPLOOSH', 'heal');
+        break;
+      case 'bottles':
+        g.audioAt('glass_clink', at);
+        g.effects.spawnBurst(at, [0x27e6ff, 0xff2d78, 0x2dff7a, 0xffd24a][Math.floor(Math.random() * 4)], 7, 3);
+        break;
+      default: break;
+    }
+  }
+}
+
+function raySphere(o, d, c, r) {
+  const ox = o.x - c.x, oy = o.y - c.y, oz = o.z - c.z;
+  const b = ox * d.x + oy * d.y + oz * d.z;
+  const cc = ox * ox + oy * oy + oz * oz - r * r;
+  const disc = b * b - cc;
+  if (disc < 0) return null;
+  const t = -b - Math.sqrt(disc);
+  return t > 0 ? t : null;
+}
+
+function rayBox(o, d, [x0, y0, z0, x1, y1, z1]) {
+  let t0 = 0, t1 = 1e9;
+  for (const [ov, dv, lo, hi] of [[o.x, d.x, x0, x1], [o.y, d.y, y0, y1], [o.z, d.z, z0, z1]]) {
+    if (Math.abs(dv) < 1e-9) { if (ov < lo || ov > hi) return null; continue; }
+    let a = (lo - ov) / dv, b = (hi - ov) / dv;
+    if (a > b) [a, b] = [b, a];
+    t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+    if (t0 > t1) return null;
+  }
+  return t0 > 0 ? t0 : null;
+}
 </script>
 <script type="hotu/module" data-key="@hotu/src/wonder.js">// wonder.js — LADY LUCK, the house's wonder weapon. She's built at THE CAGE
 // in the Counting Room from three parts, each won from a different game:

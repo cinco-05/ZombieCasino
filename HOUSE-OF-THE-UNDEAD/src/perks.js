@@ -124,13 +124,21 @@ export class Perks {
   // --------------------------------- going down --------------------------------
   /** called when the player's health hits zero; returns true if dealt back in */
   tryRevive() {
-    const g = this.game;
     if (!this.has('daiquiri')) return false;
     // the house deals you back in — the daiquiri is spent, everything else stays down
     this.owned = this.owned.filter((k) => k !== 'daiquiri');
     this._apply(false);
+    this.dealBackIn(1, 'DOUBLE DOWN — THE HOUSE DEALS YOU BACK IN');
+    return true;
+  }
+
+  /** back on your feet with hpFrac of your health: slow-mo, a shockwave that
+      throws the crowd off you, a banner. (The daiquiri, and assist mode's
+      SECOND CHANCE.) */
+  dealBackIn(hpFrac, banner) {
+    const g = this.game;
     const p = g.player;
-    p.hp = p.maxHp;
+    p.hp = Math.max(1, Math.round(p.maxHp * hpFrac));
     p.iFrames = 3;
     g.slowmo(1.2);
     g.addShake(0.3);
@@ -145,9 +153,8 @@ export class Perks {
     }
     g.effects.spawnPoof(p.pos.clone().setY(1), 0x7dff4a);
     g.effects.spawnBurst(p.pos.clone().setY(1), 0xffd060, 18, 9);
-    g.ui.banner('DOUBLE DOWN — THE HOUSE DEALS YOU BACK IN', 'cyan', 3200);
+    g.ui.banner(banner, 'cyan', 3200);
     Audio.play('revive');
-    return true;
   }
 }
 

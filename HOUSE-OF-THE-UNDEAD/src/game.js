@@ -31,6 +31,7 @@ import { LETHALS, TACTICALS } from './catalog.js';
 import { Seed } from './rng.js';
 import { Binds } from './input.js';
 import { Coach } from './coach.js';
+import { Whimsy } from './whimsy.js';
 import { makeEnvironment } from './gfx/env.js';
 import { STYLE } from './gfx/style.js';
 import { PostFX } from './gfx/postfx.js';
@@ -152,6 +153,7 @@ export class Game {
     this.wonder = new Wonder(this);       // LADY LUCK, built from three parts
     this.allIn = new AllIn(this);         // the house's pack-a-punch
     this.coach = new Coach(this);         // the first night's tips
+    this.whimsy = new Whimsy(this);       // the xylophone title, chatty zombies, a casino that answers back
     this.loadout = null;
     this._interactables = null;
     this.interactTarget = null;
@@ -199,7 +201,10 @@ export class Game {
   }
 
   _freshStats() {
-    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, deaths: 0, damage: 0 };
+    // (the rest feed the night's newspaper on the summary: see src/gazette.js)
+    return { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, deaths: 0, damage: 0,
+      wagersLost: 0, splits: 0, naturals: 0, straightUp: 0, pokerBest: '', pokerRank: -1,
+      slotPulls: 0, slotBest: 0, slotJackpots: 0, gunKills: {}, revivesGiven: 0, secondChance: false };
   }
 
   _freshPlayerMods() {
@@ -536,6 +541,7 @@ export class Game {
   }
 
   _clearMenuActors() {
+    this.whimsy?.clearBubble();
     for (const c of this.menuActors || []) { this.scene.remove(c.root); c.dispose(); }
     this.menuActors = [];
   }
@@ -554,6 +560,8 @@ export class Game {
     for (const c of this.menuActors) {
       // wander slow circles around their spot
       const m = c.menu;
+      // (poked: it stands and talks to you for a moment)
+      if (m.hold > 0) { m.hold -= dt; c.update(dt, 0); continue; }
       m.phase += dt * m.speed * 0.4;
       const target = m.home.clone().add(new THREE.Vector3(Math.cos(m.phase) * 1.2, 0, Math.sin(m.phase) * 1.2));
       const to = target.sub(c.root.position);
@@ -567,6 +575,7 @@ export class Game {
       }
       c.update(dt, m.speed * 2);
     }
+    this.whimsy.updateMenu(dt);
     this.arena.update(dt);
     this.effects.update(dt);
   }
@@ -670,6 +679,8 @@ export class Game {
   onKill(zombie) {
     this.stats.kills++;
     this.coach.tip('chips');
+    const gun = zombie.lastCause === 'explosion' ? 'explosions' : this.weapons.current?.name;
+    if (gun) this.stats.gunKills[gun] = (this.stats.gunKills[gun] || 0) + 1;
     this.combo++;
     if (zombie.kind === 'jackpot') {
       this.ui.banner('JACKPOT CASHED OUT!', 'gold', 2000);
@@ -695,6 +706,8 @@ export class Game {
   _resetRun(applyPerks = true, loadout = null) {
     this.ui.hideAllPanels();
     this._clearMenuActors();
+    this.lastKiller = null;          // for the night's newspaper
+    this.cashedOut = false;
     this.loadout = { ...(loadout || this.loadout || this.coatCheck.current()) };
     this.vice = this.loadout.vice || 'none';
     this.beatHouse = false;
@@ -994,6 +1007,7 @@ export class Game {
   }
 
   cashOut() {
+    this.cashedOut = true;
     Audio.sting('win');
     this.ui.showSummary(true, `You cashed out after round ${this.round} and walked into the sunrise.`);
   }
@@ -1025,8 +1039,18 @@ export class Game {
     Audio.play('jackpot');
   }
 
+  /** assist mode: once a run, alone, the house deals you back in instead of
+      ending the night. Returns true if it did. */
+  secondChance() {
+    if (!this.settings.assist || this.stats.secondChance || this.net.active) return false;
+    this.stats.secondChance = true;                // (in stats, so a saved run remembers it)
+    this.perks.dealBackIn(0.6, 'SECOND CHANCE — THE HOUSE COMPS YOU ONE MORE HAND');
+    return true;
+  }
+
   onPlayerDeath(cause, fromNet = false) {
     if (this.state === 'SUMMARY') return;
+    this.lastKiller = cause;
     if (this.net.active) { this.net.inRun = false; $('coop-down')?.classList.add('hidden'); }
     // the bosses hold grudges — die to one and it remembers next run
     if (cause === 'THE PIT BOSS') { this.grudge.pitboss++; this._saveGrudge(); }
@@ -1045,13 +1069,14 @@ export class Game {
   // ------------------------------- menus ------------------------------------
   _wireMenus() {
     // ENTER THE CASINO goes through the Coat Check first (pick / build a class)
-    // the very first night: the house explains itself on the way in
+    // the very first night: no forms, no lecture. One click and you're on the
+    // floor with the house's pick; the tips teach the rest as it comes up.
+    // From the second run on, the Coat Check lets you build a class first.
     $('btn-start').onclick = () => {
       Audio.init();
-      // (anyone with runs on the books already knows the house)
-      if (this.settings.seenHowTo || this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
+      if (this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
       this.ui.hide('main-menu');
-      this.ui.howTo(() => this.coatCheck.open(), 'GOT IT — TO THE COAT CHECK ▸');
+      this.newRun(this.coatCheck.current(), '');
     };
     $('btn-howto').onclick = () => { this.ui.hide('main-menu'); this.ui.howTo(() => this.ui.show('main-menu'), '◂ BACK TO THE MENU'); };
     $('btn-howto-pause').onclick = () => { this.ui.hide('pause-menu'); this.ui.howTo(() => { if (this.state === 'PAUSED') this.ui.show('pause-menu'); }, '◂ BACK'); };
@@ -1249,7 +1274,7 @@ export class Game {
 
     // screen shake: applied after all camera positioning, decays on real time
     if (this.shakeAmp > 0.002) {
-      const a = this.shakeAmp * (this.settings.reducedFlash ? 0.6 : 1);
+      const a = this.shakeAmp * (this.settings.reducedFlash ? 0.6 : 1) * (this.settings.reduceMotion ? 0.15 : 1);
       this.camera.position.x += (Math.random() - 0.5) * a;
       this.camera.position.y += (Math.random() - 0.5) * a * 0.7;
       this.camera.position.z += (Math.random() - 0.5) * a;

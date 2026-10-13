@@ -843,6 +843,7 @@ export class Net {
       this.reviveT += Math.min(0.25, (now - this._reviveAt) / 1000) * (g.perkFx?.reload ? 1 / g.perkFx.reload : 1);
       this._reviveAt = now;
       if (this.reviveT >= REVIVE_TIME) {
+        this.game.stats.revivesGiven++;
         this.sendTo(rv.seat, { t: 'revive', from: this.mySeat });
         rv.reviveSent = performance.now();
         this.reviveT = 0; this.reviving = null;

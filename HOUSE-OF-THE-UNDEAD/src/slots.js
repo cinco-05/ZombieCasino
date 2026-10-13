@@ -284,6 +284,10 @@ export class SlotMachine {
     const res = evalSlotWindow(win);
     const chips = this.chipsFor(res.coins);
     this.spinning = false;
+    const st = g.stats;
+    st.slotPulls++;
+    st.slotBest = Math.max(st.slotBest, chips);
+    if (res.wins.some((w) => w.key === 'wild' || w.key === 'seven')) st.slotJackpots++;
     // light the winning symbols and lines
     for (const w of res.wins) {
       w.rows.forEach((row, reel) => {
