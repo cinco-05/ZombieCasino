@@ -51,11 +51,18 @@ the image link previews use.
 > horns swinging through three tunes) are all generated while you play. Three
 > art styles: 1930s cartoon, 1930s black and white, and modern neon.
 >
-> **Built for real players:** a How to Play card and first-night tips, fully
-> rebindable controls, invert Y and hold/toggle options, a reduced-flashing
-> mode, seeds you can type in and share, mid-run saves, a loyalty card with
-> permanent perks, 23 markers to chase, and an FPS and ping readout. All chips
-> are fictional. No real money, ever.
+> **Every night is a story:** each run ends with its own front page of THE
+> EVENING GHOUL, a 1930s newspaper written from what actually happened ("ACE
+> 42 SPLITS 3 TIMES, REGRETS NOTHING"). The neon title on the menu plays like
+> a xylophone, the dead behind the menu talk back when you poke them, and the
+> casino answers when you shoot it.
+>
+> **Built for everyone:** one click from the menu to the first fight, with
+> tips that teach as you play. An assist mode (half damage, gentler bets, a
+> once-a-run second chance), aim assist, reduce motion and reduced flashing,
+> offered after a rough start. Fully rebindable controls, seeds to share,
+> mid-run saves, a loyalty card with permanent perks and 23 markers to chase.
+> All chips are fictional. No real money, ever.
 
 ## d. Project link / URL
 

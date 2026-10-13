@@ -9,6 +9,8 @@ import {
 import { Seed, hashStr, normalizeSeed, randomSeed } from '../src/rng.js';
 import { SONGS } from '../src/audio.js';
 import { ACTIONS, Binds, RESERVED } from '../src/input.js';
+import { writeGazette } from '../src/gazette.js';
+import { softPenalty, lossText } from '../src/shop.js';
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log('ok -', name); }
@@ -263,6 +265,48 @@ test('controls: every action has a key, rebinding swaps clashes, labels read rig
   assert.equal(Binds.moveLabel(), '↑ SPACE S D', 'a long key name spaces the set out');
   Binds.reset();
   assert.deepEqual(Binds.map.reload, ['KeyR']);
+});
+
+test('the evening ghoul: every kind of night gets a clean front page', () => {
+  const base = { kills: 0, headshots: 0, bestCombo: 0, gambled: 0, wagersWon: 0, wagersLost: 0, splits: 0, naturals: 0,
+    straightUp: 0, pokerBest: '', slotPulls: 0, slotBest: 0, slotJackpots: 0, gunKills: {}, revivesGiven: 0, deaths: 0 };
+  const nights = [
+    { name: 'ACE 42', won: true, cashedOut: true, round: 10, cause: null, chips: 900, stats: { ...base, kills: 300 } },
+    { name: 'ACE 42', won: true, round: 13, cause: 'THE PIT BOSS', stats: { ...base, kills: 400 } },
+    { name: 'ACE 42', won: false, round: 5, cause: 'THE PIT BOSS', stats: { ...base, kills: 120, headshots: 30 } },
+    { name: 'ACE 42', won: false, round: 1, cause: 'WALKER', stats: { ...base } },
+    { name: 'ACE 42', won: false, round: 4, cause: 'BRUTE', stats: { ...base, slotJackpots: 1, slotPulls: 12, slotBest: 400, kills: 50 } },
+    { name: 'ACE 42', won: false, round: 3, cause: 'SPRINTER', stats: { ...base, splits: 3, wagersWon: 1, wagersLost: 2, gambled: 300 } },
+    { name: 'ACE 42', won: false, round: 6, cause: 'SHOWGIRL', stats: { ...base, bestCombo: 24, gunKills: { 'Lucky Seven': 10, explosions: 3 } } },
+    { name: 'ACE 42', won: false, round: 2, cause: 'the horde', coop: true, stats: { ...base, revivesGiven: 2, kills: 9 } },
+    { won: false, round: 3, cause: undefined, stats: {} },
+  ];
+  const heads = new Set();
+  for (const night of nights) {
+    for (let k = 0; k < 6; k++) {
+      let x = k * 0.17;
+      const paper = writeGazette(night, () => ((x += 0.37) % 1));
+      const all = Object.values(paper).join(' ');
+      assert.doesNotMatch(all, /undefined|NaN|null|\[object/, all);
+      assert.ok(paper.headline.length > 8 && paper.story.length > 40, all);
+      heads.add(paper.headline);
+    }
+  }
+  assert.ok(heads.size >= 12, `headlines vary (${heads.size})`);
+  const early = writeGazette(nights[3], () => 0);
+  assert.match(early.headline, /ONE ROUND|ARRIVES/);
+  assert.match(writeGazette(nights[4], () => 0).headline, /BANDIT|SEVENS/);
+  assert.match(writeGazette(nights[0], () => 0).headline, /BREAKS THE BANK|CASHES OUT/);
+  assert.match(writeGazette(nights[7], () => 0).story, /picked a friend up off the carpet 2 times/);
+});
+
+test('assist mode: a lost bet costs one step less, a mild one nothing', () => {
+  assert.equal(softPenalty('severe', true), 'moderate');
+  assert.equal(softPenalty('moderate', true), 'mild');
+  assert.equal(softPenalty('mild', true), null);
+  for (const k of ['mild', 'moderate', 'severe']) assert.equal(softPenalty(k, false), k);
+  assert.equal(lossText('mild', true), 'no penalty (assist)');
+  assert.equal(lossText('severe', false), 'severe penalty');
 });
 
 console.log(`\n${passed} tests passed.`);

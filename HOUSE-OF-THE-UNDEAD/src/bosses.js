@@ -85,7 +85,7 @@ export class PitBoss extends BossBase {
   constructor(game) {
     super(game, 'THE PIT BOSS',
       1400 * (1 + 0.1 * (game.round - CONFIG.minibossRound))
-           * (1 + 0.10 * Math.min(5, game.grudge?.pitboss || 0)));   // grudge: +10%/death, cap 5
+           * (game.settings.assist ? 1 : 1 + 0.10 * Math.min(5, game.grudge?.pitboss || 0)));   // grudge: +10%/death, cap 5 (assist: forgiven)
     this.kind = 'pitboss';
     if ((game.grudge?.pitboss || 0) > 0) {
       setTimeout(() => game.ui.prompt('"YOU AGAIN. STILL IN DEBT."', 2600), 2400);
@@ -201,7 +201,7 @@ export class HouseDealer extends BossBase {
   constructor(game) {
     super(game, 'THE HOUSE DEALER',
       3200 * (1 + 0.12 * Math.max(0, game.round - CONFIG.finalRound))   // endless scaling
-           * (1 + 0.10 * Math.min(5, game.grudge?.housedealer || 0)));  // grudge
+           * (game.settings.assist ? 1 : 1 + 0.10 * Math.min(5, game.grudge?.housedealer || 0)));  // grudge (assist: forgiven)
     this.kind = 'housedealer';
     if ((game.grudge?.housedealer || 0) > 0) {
       setTimeout(() => game.ui.prompt('"BACK FOR ANOTHER HAND? HOW PREDICTABLE."', 2600), 2400);

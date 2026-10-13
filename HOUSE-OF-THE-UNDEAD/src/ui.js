@@ -19,6 +19,7 @@ import { LOYALTY, MARKERS, CHIPS } from './progress.js';
 import { Seed } from './rng.js';
 import { SEAT_COLOR } from './net.js';
 import { ACTIONS, Binds, RESERVED } from './input.js';
+import { writeGazette } from './gazette.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -566,8 +567,10 @@ export class UI {
       invertY: saved.invertY ?? false,
       aimToggle: saved.aimToggle ?? false,
       sprintToggle: saved.sprintToggle ?? false,
-      seenHowTo: saved.seenHowTo ?? false,
       tips: saved.tips ?? true,
+      assist: saved.assist ?? false,
+      aimAssist: saved.aimAssist ?? false,
+      reduceMotion: saved.reduceMotion ?? false,
     };
     // Ultra arrived after some saves already said 'high': upgrade those once on a
     // strong card (the frame-rate watchdog still steps it back if it struggles)
@@ -597,6 +600,9 @@ export class UI {
     $('set-aim-mode').value = g.settings.aimToggle ? 'toggle' : 'hold';
     $('set-sprint-mode').value = g.settings.sprintToggle ? 'toggle' : 'hold';
     $('set-tips').checked = g.settings.tips !== false;
+    $('set-assist').checked = g.settings.assist;
+    $('set-aim-assist').checked = g.settings.aimAssist;
+    $('set-reduce-motion').checked = g.settings.reduceMotion;
 
     const apply = () => {
       g.settings.sensitivity = parseFloat($('set-sensitivity').value);
@@ -615,6 +621,9 @@ export class UI {
       const tips = $('set-tips').checked;
       if (tips && g.settings.tips === false) g.coach?.reset();          // back on: every tip again
       g.settings.tips = tips;
+      g.settings.assist = $('set-assist').checked;
+      g.settings.aimAssist = $('set-aim-assist').checked;
+      g.settings.reduceMotion = $('set-reduce-motion').checked;
       if (!g.settings.aimToggle && g.player) g.player.aiming = false;
       if (!g.settings.sprintToggle && g.player) g.player.sprintLatch = false;
       const q = $('set-quality').value;
@@ -626,7 +635,7 @@ export class UI {
       this.saveSettings();
     };
     for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality',
-      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips']) {
+      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips', 'set-assist', 'set-aim-assist', 'set-reduce-motion']) {
       $(id).addEventListener('input', apply);
       $(id).addEventListener('change', apply);
     }
@@ -636,6 +645,14 @@ export class UI {
       tab.onclick = () => this.settingsPage(tab.dataset.page);
     }
     this._wireBinds();
+    // the summary's "rough night?" offer: one click turns assist on
+    $('btn-assist-on').onclick = () => {
+      $('set-assist').checked = true;
+      apply();
+      $('btn-assist-on').textContent = '✓ ASSIST MODE IS ON (SETTINGS → ASSIST & ACCESS)';
+      $('btn-assist-on').disabled = true;
+      Audio.play('wager_win');
+    };
     apply();
   }
 
@@ -707,16 +724,27 @@ export class UI {
     this.renderControlsHint();
   }
 
+  /** THE EVENING GHOUL: tonight's front page, from what really happened */
+  printGazette(won) {
+    const g = this.game;
+    const paper = writeGazette({
+      name: g.net.name, won, cashedOut: g.cashedOut, round: g.round, cause: g.lastKiller,
+      chips: g.chips, coop: g.mode === 'coop', stats: g.stats,
+    });
+    $('summary-gazette').innerHTML = `<div class="gz-mast">${paper.masthead}</div><div class="gz-date">${paper.dateline}</div>`
+      + `<h3 class="gz-head">${esc(paper.headline)}</h3><div class="gz-deck">${esc(paper.deck)}</div>`
+      + `<p class="gz-story">${esc(paper.story)}</p><p class="gz-quote">"${esc(paper.quote)}" <span>— ${esc(paper.witness)}</span></p>`;
+    Audio.play('card');
+  }
+
   /** HOW TO PLAY: the four-step card. then() runs when they're done reading */
   howTo(then, label = 'GOT IT') {
-    const g = this.game;
     for (const el of document.querySelectorAll('#howto-panel .hk')) {
       el.textContent = el.dataset.act === 'move' ? Binds.moveLabel() : Binds.label(el.dataset.act);
     }
     $('btn-howto-go').textContent = label;
     $('btn-howto-go').onclick = () => { this.hide('howto-panel'); then?.(); };
     this.show('howto-panel');
-    if (!g.settings.seenHowTo) { g.settings.seenHowTo = true; this.saveSettings(); }
   }
 
   /** the key list on the main menu, from the live binds */
@@ -856,6 +884,7 @@ export class UI {
     $('summary-title').textContent = won ? 'YOU BEAT THE HOUSE' : 'THE HOUSE WINS';
     $('summary-title').className = won ? 'gold' : 'red';
     $('summary-cause').textContent = cause;
+    this.printGazette(won);
     $('summary-stats').innerHTML = `
       <div>Rounds survived: <b>${g.round}</b> / ${CONFIG.rounds}</div>
       <div>Zombies destroyed: <b>${g.stats.kills}</b></div>
@@ -873,6 +902,14 @@ export class UI {
       })()}</b> chips (${Math.round(this._lastDeposit.rate * 100)}% cut) — vault holds ${g.vault.banked}</div>`;
     $('summary-seed').innerHTML = `SEED <b>${Seed.text}</b>${Seed.custom ? ' <span class="dim">(your pick)</span>' : ''}`;
     $('btn-replay-seed').classList.toggle('hidden', g.mode === 'coop');
+    // two early nights in a row: offer the assist, once, without nagging
+    let rough = 0;
+    try { rough = Number(localStorage.getItem('hotu_rough_v1')) || 0; } catch { /* private mode */ }
+    rough = !won && g.round <= 3 ? rough + 1 : (won || g.round >= 5 ? 0 : rough);
+    try { localStorage.setItem('hotu_rough_v1', String(rough)); } catch { /* private mode */ }
+    $('summary-assist').classList.toggle('hidden', !(rough >= 2 && !g.settings.assist && g.mode !== 'coop'));
+    $('btn-assist-on').disabled = false;
+    $('btn-assist-on').textContent = '♣ TURN ON ASSIST MODE';
     this.saveRunResult(won, g.round, g.chips, g.stats.kills);
     g.rewards.clearPresentation();
     this._summaryProgress();

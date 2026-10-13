@@ -60,7 +60,10 @@ New players get a HOW TO PLAY card and short tips the first time each thing come
 * Streaks, a progressive jackpot, and comps in five rarities
 * Permanent progression: the Vault, Loyalty Card tiers, Markers, and collectible chips
 * Online co-op for up to four players by room code or invite link: everyone gets their own shop, a downed teammate shows a revive icon (hold E to pick them up), and holding TAB shows everyone's ping, kills, deaths, damage and chips
-* A HOW TO PLAY card, first-night tips, and fully rebindable controls
+* One click from the menu to the first fight, first-night tips, a HOW TO PLAY card, and fully rebindable controls
+* ASSIST & ACCESS settings: an assist mode (half damage, gentler bets, a once-a-run second chance), aim assist, reduce motion and reduced flashing
+* THE EVENING GHOUL: every run ends with its own newspaper front page
+* A main-menu title you can play like a xylophone, menu zombies you can poke, and a casino that answers back when you shoot it
 * An FPS and ping readout in the corner (ping reads 0 when you play alone)
 * Three art styles: 1930s Cartoon, 1930s Black & White, and Modern
 * A procedural jazz band playing three tunes in rotation, and 3D audio

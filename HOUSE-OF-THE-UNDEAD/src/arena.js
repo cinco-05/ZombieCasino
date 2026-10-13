@@ -695,6 +695,7 @@ export class Arena {
     }
     g.scale.setScalar(s);
     g.position.set(x, top - 1.9 * s, z);
+    (this.chandeliers ||= []).push({ x, y: top - 1.9 * s, z, s });   // (whimsy.js: they tinkle when shot)
     this.static.add(g);
   }
 

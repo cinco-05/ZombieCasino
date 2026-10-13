@@ -213,6 +213,7 @@ addEventListener('unhandledrejection', function (e) {
     <div class="howto-extra">
       <div><b>🤝 WITH FRIENDS</b>Up to four players. Host a table, send the invite link. Everyone gets their own shop. Hold <kbd class="hk" data-act="use">E</kbd> over a downed friend to revive them.</div>
       <div><b>🎲 SEEDS</b>Every run is dealt from a seed. Type one in at the Coat Check to replay the exact same night, or share yours.</div>
+      <div><b>♣ GOING EASY</b>Settings → ASSIST &amp; ACCESS: half damage, gentler bets and a second chance, plus aim assist and reduce motion. Nothing is locked away for using it.</div>
       <div><b>⌨ CONTROLS</b><kbd class="hk" data-act="move">WASD</kbd> move · <kbd class="hk" data-act="dash">Q</kbd> dash · <kbd class="hk" data-act="use">E</kbd> use · <kbd class="hk" data-act="reload">R</kbd> reload · <kbd class="hk" data-act="lethal">G</kbd> lethal · <kbd>ESC</kbd> pause. Rebind any key in Settings → Controls.</div>
     </div>
     <button id="btn-howto-go" class="btn btn-big">GOT IT</button>
@@ -271,6 +272,7 @@ addEventListener('unhandledrejection', function (e) {
     <div class="set-tabs" role="tablist">
       <button class="set-tab on" data-page="game" role="tab">PICTURE &amp; SOUND</button>
       <button class="set-tab" data-page="controls" role="tab">CONTROLS</button>
+      <button class="set-tab" data-page="assist" role="tab">ASSIST &amp; ACCESS</button>
     </div>
     <div class="set-page" data-page="game">
     <div class="setting-row"><label>Art style<br><span class="dim small">Restarts the game to apply</span></label>
@@ -296,10 +298,6 @@ addEventListener('unhandledrejection', function (e) {
       <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
     <div class="setting-row"><label>Show FPS &amp; ping<br><span class="dim small">Top-right corner. Ping reads 0 when you play alone</span></label>
       <input id="set-show-perf" type="checkbox" checked></div>
-    <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
-      <input id="set-reduced-flash" type="checkbox"></div>
-    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
-      <input id="set-tips" type="checkbox" checked></div>
     <div class="setting-row"><label>Display</label>
       <button id="btn-fullscreen" class="btn small-btn">TOGGLE FULLSCREEN (F11)</button>
       <button id="btn-debug-settings" class="btn small-btn">🛠 DEBUG MODE (F3)</button></div>
@@ -317,6 +315,19 @@ addEventListener('unhandledrejection', function (e) {
     <div id="bind-grid" class="bind-grid"></div>
     <p class="bind-fixed dim small"><kbd>LEFT MOUSE</kbd> fire · <kbd>RIGHT MOUSE</kbd> aim · <kbd>WHEEL</kbd> switch guns · <kbd>ESC</kbd> pause · <kbd>F11</kbd> fullscreen<br>At the tables: <kbd>H</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>P</kbd> blackjack · <kbd>1–5</kbd> <kbd>SPACE</kbd> poker · <kbd>SPACE</kbd> <kbd>1–3</kbd> slots</p>
     <button id="btn-binds-reset" class="btn small-btn">RESET KEYS TO DEFAULT</button>
+    </div>
+    <div class="set-page hidden" data-page="assist">
+    <p class="dim small set-blurb">Everyone deserves a night out. Turn on whatever makes it fun for you; none of it locks anything away.</p>
+    <div class="setting-row"><label>Assist mode: the house goes easy<br><span class="dim small">The dead hit for half. A lost bet costs one step less, and a mild one costs nothing. Once a run, the house deals you a SECOND CHANCE instead of a funeral. Bosses forget their grudges</span></label>
+      <input id="set-assist" type="checkbox"></div>
+    <div class="setting-row"><label>Aim assist<br><span class="dim small">The crosshair slows down a little over an enemy, so it's easier to stay on target</span></label>
+      <input id="set-aim-assist" type="checkbox"></div>
+    <div class="setting-row"><label>Reduce motion<br><span class="dim small">Much less screen shake, no head bob, a steadier gun</span></label>
+      <input id="set-reduce-motion" type="checkbox"></div>
+    <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
+      <input id="set-reduced-flash" type="checkbox"></div>
+    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
+      <input id="set-tips" type="checkbox" checked></div>
     </div>
     <button id="btn-settings-close" class="btn btn-big">DONE</button>
   </div>
@@ -529,12 +540,20 @@ addEventListener('unhandledrejection', function (e) {
   <div class="deco-card">
     <h1 id="summary-title">THE HOUSE WINS</h1>
     <p id="summary-cause" class="dim"></p>
+    <div id="summary-gazette" class="gazette"></div>
+    <div id="summary-assist" class="assist-offer hidden">
+      <p>Rough night? The house can go easy on you: the dead hit for half, bets cost less to lose, and you get one second chance a run.</p>
+      <button id="btn-assist-on" class="btn small-btn">♣ TURN ON ASSIST MODE</button>
+    </div>
+    <!-- (the way out sits right under the paper, where nobody has to scroll for it) -->
+    <div class="btn-row summary-actions">
+      <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
+      <button id="btn-replay-seed" class="btn">REPLAY THIS SEED</button>
+      <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
+    </div>
     <div id="summary-seed" class="seed-line"></div>
     <div id="summary-stats"></div>
     <div id="summary-progress"></div>
-    <button id="btn-play-again" class="btn btn-big">PLAY AGAIN</button>
-    <button id="btn-replay-seed" class="btn">REPLAY THIS SEED</button>
-    <button id="btn-main-menu" class="btn btn-ghost">MAIN MENU</button>
   </div>
 </div>
 

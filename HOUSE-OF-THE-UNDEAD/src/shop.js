@@ -24,6 +24,11 @@ export const TIERS = {
   legendary: { label: 'LEGENDARY', penalty: 'severe', range: [185, 290], cap: 1.1 },
 };
 
+/** assist mode: a lost bet costs one step less, and a mild one costs nothing (null) */
+export const softPenalty = (kind, assist) => (!assist ? kind : kind === 'severe' ? 'moderate' : kind === 'moderate' ? 'mild' : null);
+/** what losing costs, in words ("a moderate penalty", "nothing (assist)") */
+export const lossText = (kind, assist) => { const k = softPenalty(kind, assist); return k ? `${k} penalty` : 'no penalty (assist)'; };
+
 const SUPPLIES = {
   heal:     { name: 'FIRST AID', icon: '✚', desc: '+35 health, right now.', range: [35, 60] },
   fullheal: { name: 'SMELLING SALTS', icon: '♥', desc: 'Back to full health.', range: [90, 140] },
@@ -160,7 +165,7 @@ export class Shop {
         type: c.credit ? 'HOUSE CREDIT' : 'TABLE',
         badge: T.label, icon: G.icon, name: G.name,
         desc: G.blurb,
-        terms: `<b>Win:</b> ${T.label.toLowerCase()} upgrade${c.credit ? '' : ', stake ×2'}<br><b>Lose:</b> ${T.penalty} penalty`,
+        terms: `<b>Win:</b> ${T.label.toLowerCase()} upgrade${c.credit ? '' : ', stake ×2'}<br><b>Lose:</b> ${lossText(T.penalty, this.game.settings.assist)}`,
       };
     }
     if (c.kind === 'slots') {

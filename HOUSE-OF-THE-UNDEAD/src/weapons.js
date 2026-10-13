@@ -120,6 +120,7 @@ export class Weapons {
     this.switchT = 0;
     this.pendingSlot = -1;
     this.drinkT = 0;
+    this.reloadQueued = false;
     this.clearShots();
     this._refreshViewmodel();
   }
@@ -412,6 +413,20 @@ export class Weapons {
       .normalize();
   }
 
+  /** aim assist: is the crosshair resting on a live one (with no wall in between)? */
+  aimOnEnemy() {
+    const g = this.game;
+    const dir = new THREE.Vector3(0, 0, -1).applyEuler(g.camera.rotation);
+    const wall = g.arena.rayHit(g.camera.position, dir, 45);
+    this.raycaster.set(g.camera.position, dir);
+    this.raycaster.far = wall ? wall.dist : 45;
+    for (const hit of this.raycaster.intersectObjects(g.enemies.hitMeshes(), false)) {
+      const ref = hit.object.userData.ref;
+      if (ref && !ref.dead) return true;
+    }
+    return false;
+  }
+
   /** hitscan: stops at the first wall; pierce > 1 carries on through bodies */
   _fireRay(w, spread, dmgMult = 1) {
     const g = this.game;
@@ -434,6 +449,7 @@ export class Weapons {
     }
     const end = last && seen.size >= pierce ? last.distance : wallD;
     this._tracer(dir, end);
+    if (!(last && seen.size >= pierce)) g.whimsy?.shot(g.camera.position, dir, end);   // the casino answers back
     if (wall && !(last && seen.size >= pierce)) g.effects.spawnImpact(wall.point.addScaledVector(wall.normal, 0.02), wall.normal);
   }
 
@@ -692,7 +708,10 @@ export class Weapons {
   // ------------------------------ reload ------------------------------------
   startReload() {
     const w = this.current;
-    if (this.reloading || this.switchT > 0 || this.drinkT > 0 || w.mag >= w.magSize || w.reserve <= 0) return;
+    // mid-swap? remembered, and the new gun reloads as soon as it's up
+    if (this.switchT > 0 || this.drinkT > 0) { this.reloadQueued = true; return; }
+    this.reloadQueued = false;
+    if (this.reloading || w.mag >= w.magSize || w.reserve <= 0) return;
     this.reloading = true;
     this.reloadT = 0;
     this.anim.startReload(this.currentId, Math.min(w.magSize - w.mag, w.reserve), w.reloadTime);
@@ -876,6 +895,7 @@ export class Weapons {
     // full-auto
     if (this.triggerHeld && this.current.def.auto) this.tryFire();
 
+    if (this.reloadQueued && this.switchT <= 0 && this.drinkT <= 0) this.startReload();
     // ---- weapon switch: drop, swap at the bottom, rise ----
     let switchProg = 0;
     if (this.switchT > 0) {
@@ -924,7 +944,7 @@ export class Weapons {
 
     // ---- walk sway (figure-eight) + idle breathing ----
     this.kick = Math.max(0, this.kick - dt * 8);
-    const run = sprinting ? 1.7 : 1;
+    const run = (sprinting ? 1.7 : 1) * (g.settings.reduceMotion ? 0.3 : 1);   // reduce motion: a steadier gun
     const swayX = moving ? Math.sin(g.player.bobT) * 0.013 * run : 0;
     const swayY = moving ? -Math.abs(Math.cos(g.player.bobT)) * 0.012 * run : 0;
     const breathe = Math.sin(performance.now() / 640) * 0.006;
