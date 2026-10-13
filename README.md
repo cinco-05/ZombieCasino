@@ -1,5 +1,7 @@
 # HOUSE OF THE UNDEAD
 
+![HOUSE OF THE UNDEAD](HOUSE-OF-THE-UNDEAD/press/cover.png)
+
 A first-person roguelite shooter set in a haunted 1930s Las Vegas casino. Fight the undead gamblers, collect chips, gamble between rounds, and build up your arsenal. The whole game is drawn as a rubber-hose cartoon from the Fleischer and early Disney era.
 
 ## 🤖 An AI-Made Game
@@ -10,6 +12,7 @@ There are no image, model, or audio files in the project. Everything you see and
 
 ## Play
 
+* **Online:** https://cinco-05.github.io/zombiecasino/ (published from `main` by GitHub Pages once Pages is switched on: Settings → Pages → Source: GitHub Actions)
 * **Windows:** double-click `HOUSE OF THE UNDEAD.exe`
 * **Any browser:** open `HOUSE OF THE UNDEAD.html`
 * **From the source folder:**
@@ -23,6 +26,8 @@ Then open `http://localhost:8000`.
 
 ## Controls
 
+New players get a HOW TO PLAY card and short tips the first time each thing comes up. Every key below can be rebound in Settings → Controls (which also has invert Y, and hold or toggle for aiming and sprinting).
+
 * WASD: Move
 * Mouse: Aim
 * Left click: Fire
@@ -34,9 +39,9 @@ Then open `http://localhost:8000`.
 * T: Tactical
 * F: Pistol-whip
 * R: Reload
-* E: Use/buy
+* E: Use/buy, and hold to revive a teammate
 * 1–3 or mouse wheel: Switch guns
-* Esc: Pause
+* Esc: Pause, or back out of a menu
 * F11: Fullscreen
 * F3: Debug panel
 * TAB (hold): Scoreboard
@@ -54,7 +59,8 @@ Then open `http://localhost:8000`.
 * Cocktail perks, paid doors to new wings, and the Big Six money wheel
 * Streaks, a progressive jackpot, and comps in five rarities
 * Permanent progression: the Vault, Loyalty Card tiers, Markers, and collectible chips
-* Online co-op for up to four players by room code: everyone gets their own shop, a downed teammate shows a revive icon (hold E to pick them up), and holding TAB shows everyone's ping, kills, deaths, damage and chips
+* Online co-op for up to four players by room code or invite link: everyone gets their own shop, a downed teammate shows a revive icon (hold E to pick them up), and holding TAB shows everyone's ping, kills, deaths, damage and chips
+* A HOW TO PLAY card, first-night tips, and fully rebindable controls
 * An FPS and ping readout in the corner (ping reads 0 when you play alone)
 * Three art styles: 1930s Cartoon, 1930s Black & White, and Modern
 * A procedural jazz band playing three tunes in rotation, and 3D audio

@@ -72,7 +72,7 @@ export function noiseCanvas(size = 256, scale = 4, octaves = 4, seed = 7, contra
     amp *= 0.5;
   }
   const cv = makeCanvas(size);
-  const ctx = cv.getContext('2d');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });   // tintedNoise reads it back
   const img = ctx.createImageData(size, size);
   for (let i = 0; i < out.length; i++) {
     let v = out[i] / total;

@@ -14,7 +14,7 @@ let master, comp, muffle, sfxGain, musicGain, ambientGain, reverbIn, reverb, noi
 let currentDest = null;   // when set, synth nodes route here (spatial panner)
 let warble = null;        // shared tape-wobble LFO (THE KING's croon)
 let dry = false;          // self-test: walk the score without making a sound
-const M = { intensity: 0.15, boss: false, health: 1, next: 0, beatNext: 0, eventT: 0, song: -1, bars: null, bar: 0, tick: 0, gap: 0 };
+const M = { intensity: 0.15, boss: false, health: 1, next: 0, beatNext: 0, eventT: 0, song: -1, bars: null, bar: 0, tick: 0, gap: 0, paused: false, musicV: 0.5 };
 
 const now = () => ctx.currentTime;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -776,7 +776,8 @@ export const Audio = {
   ready: false,
 
   init() {
-    if (this.ready) return;
+    // made before anyone clicked (an invite link), the context starts asleep: wake it
+    if (this.ready) { if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); return; }
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
@@ -810,8 +811,24 @@ export const Audio = {
     if (!ctx) return;
     master.gain.value = masterV;
     sfxGain.gain.value = sfxV;
-    musicGain.gain.value = musicV * 1.3;
+    M.musicV = musicV;
+    musicGain.gain.value = musicV * 1.3 * (M.paused ? 0.6 : 1);
     ambientGain.gain.value = musicV * 1.1;   // ambience rides the music slider
+  },
+
+  /** paused: the band keeps playing, as if through the door of the next room */
+  setPaused(on) {
+    if (!ctx || M.paused === on) return;
+    M.paused = on;
+    musicGain.gain.setTargetAtTime(M.musicV * 1.3 * (on ? 0.6 : 1), now(), 0.25);
+    this._muffle();
+  },
+
+  _muffle() {
+    const h = M.health;
+    let f = h < 0.3 ? 900 + h / 0.3 * 7000 : 20000;
+    if (M.paused) f = Math.min(f, 750);
+    muffle.frequency.setTargetAtTime(f, now(), M.paused ? 0.12 : 0.3);
   },
 
   setBossMode(on) { M.boss = on; },
@@ -822,6 +839,38 @@ export const Audio = {
   /** skip the band to its next tune (the debug panel) */
   nextSong() { if (ctx) { startSong(M.song + 1); M.gap = 0; M.next = now() + 0.1; } },
 
+  /** the band sees the run end: 'lose' gets the sad trombone (wah, wah, wah,
+      waaah), 'win' gets "shave and a haircut, two bits". The tune stops where
+      it is, and the next one starts after a breath. */
+  sting(kind) {
+    if (!ctx || ctx.state === 'suspended') return;
+    const t = now() + 0.08;
+    const td = 60 / SONGS[Math.max(0, M.song)].bpm / 3;
+    M.gap = Math.ceil(5 / td);                          // ~5 s of quiet, then the next tune
+    try {
+      if (kind === 'lose') {
+        [[58, 0], [57, 0.62], [56, 1.24]].forEach(([m, dt]) => HORNS.trombone(m, t + dt, 0.5, 1.15));
+        // the last one droops and wobbles
+        horn({ m: 55, t: t + 1.86, dur: 1.7, peak: 0.09, a: 0.05, lp: 1100, bp: 600, scoop: 40, vib: 5.5, vibCents: 55, sus: 0.85, r: 0.3,
+          osc: [['sawtooth', 1, 0], ['sawtooth', 0.4, 6]] });
+        bass(31, t + 1.86, 1.4, 0.7);
+        snare(t + 1.86, 0.4, true);
+      } else {
+        const q = 0.24;
+        const tune = [[72, 0, 1], [67, 1, 0.5], [67, 1.5, 0.5], [69, 2, 1], [67, 3, 1], [71, 5, 1], [72, 6, 2]];
+        for (const [m, at, len] of tune) {
+          HORNS.trumpet(m, t + at * q, len * q * 0.85, 1.15);
+          HORNS.clarinet({ 72: 64, 67: 64, 69: 65, 71: 67 }[m], t + at * q, len * q * 0.85, 0.6);   // thirds and sixths under it
+          snare(t + at * q, at >= 5 ? 1 : 0.55);
+        }
+        kick(t + 6 * q, 1.1);
+        crash(t + 6 * q, 1.2);
+        compChord(chordOf('C6'), t + 6 * q, 1.3, 0.02);
+        bass(36, t + 6 * q, 1.2, 1);
+      }
+    } catch { /* never crash on music */ }
+  },
+
   /** 0..1 danger level — drives tempo, heartbeat, tension strings */
   setIntensity(v) { M.intensity = Math.max(0, Math.min(1, v)); },
 
@@ -829,8 +878,7 @@ export const Audio = {
   setHealth(frac) {
     M.health = Math.max(0, Math.min(1, frac));
     if (!ctx) return;
-    const f = frac < 0.3 ? 900 + frac / 0.3 * 7000 : 20000;
-    muffle.frequency.setTargetAtTime(f, now(), 0.3);
+    this._muffle();
   },
 
   /** play a sound AT a world position; pans + attenuates with distance.
@@ -894,6 +942,9 @@ export const Audio = {
     const fn = SFX[name];
     if (fn) { try { fn(); } catch (e) { /* never crash on audio */ } }
   },
+
+  /** dev check: where the mix sits right now (paused, the muffle, the band's level) */
+  _mix() { return ctx ? { paused: M.paused, muffleHz: Math.round(muffle.frequency.value), music: +musicGain.gain.value.toFixed(3) } : null; },
 
   /** dev check: fire every sound once, report any that throw */
   _selfTest() {

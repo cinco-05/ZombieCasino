@@ -1,0 +1,56 @@
+# Publishes the game to GitHub Pages, so anyone can play it from a link:
+#   https://cinco-05.github.io/zombiecasino/
+# and co-op invite links (…/?join=CODE) open straight into a friend's table.
+#
+# One-time setup: repository Settings → Pages → Source: "GitHub Actions".
+name: Publish the game
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Unit tests
+        working-directory: HOUSE-OF-THE-UNDEAD
+        run: node test/cards.test.mjs
+
+      - name: Build the single-file game
+        run: node HOUSE-OF-THE-UNDEAD/build-html.mjs
+
+      - name: Lay out the site
+        run: |
+          mkdir -p _site
+          cp "HOUSE OF THE UNDEAD.html" _site/index.html
+          cp HOUSE-OF-THE-UNDEAD/press/cover.png _site/cover.png
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

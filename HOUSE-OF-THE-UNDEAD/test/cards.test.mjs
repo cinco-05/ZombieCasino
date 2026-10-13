@@ -8,6 +8,7 @@ import {
 } from '../src/cards.js';
 import { Seed, hashStr, normalizeSeed, randomSeed } from '../src/rng.js';
 import { SONGS } from '../src/audio.js';
+import { ACTIONS, Binds, RESERVED } from '../src/input.js';
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log('ok -', name); }
@@ -233,6 +234,35 @@ test('the band: three tunes, every bar adds up to four beats', () => {
     for (const c of song.chords.join(' ').split(' ')) assert.match(c, /^[A-G][#b]?(maj7|m7b5|dim7|m7|m6|m|6|7|9)?$/, `${song.title}: chord ${c}`);
     assert.ok(song.choruses.length >= 2);
   }
+});
+
+test('controls: every action has a key, rebinding swaps clashes, labels read right', () => {
+  Binds.reset();
+  const codes = ACTIONS.flatMap((a) => Binds.map[a.id]);
+  assert.equal(new Set(codes).size, codes.length, 'no key does two jobs by default');
+  assert.equal(Binds.actionFor('KeyW'), 'forward');
+  assert.equal(Binds.label('sprint'), 'SHIFT');
+  assert.equal(Binds.moveLabel(), 'WASD');
+  // E onto reload: use takes R, so nothing is left without a key
+  assert.equal(Binds.set('reload', 'KeyE'), 'use');
+  assert.deepEqual(Binds.map.reload, ['KeyE']);
+  assert.deepEqual(Binds.map.use, ['KeyR']);
+  // one of sprint's two shifts moves to jump: sprint keeps the other
+  Binds.set('jump', 'ShiftRight');
+  assert.deepEqual(Binds.map.sprint, ['ShiftLeft']);
+  assert.ok(Binds.held({ ShiftRight: true }, 'jump'));
+  assert.ok(!Binds.held({ ShiftRight: true }, 'sprint'));
+  // Esc and the two main mouse buttons stay the game's
+  for (const code of RESERVED) assert.equal(Binds.set('dash', code), null);
+  assert.deepEqual(Binds.map.dash, ['KeyQ']);
+  assert.equal(Binds.keyName('Mouse3'), 'MOUSE 4');
+  assert.equal(Binds.keyName('Digit2'), '2');
+  Binds.set('forward', 'ArrowUp');
+  assert.equal(Binds.moveLabel(), '↑ASD');
+  Binds.set('left', 'Space');
+  assert.equal(Binds.moveLabel(), '↑ SPACE S D', 'a long key name spaces the set out');
+  Binds.reset();
+  assert.deepEqual(Binds.map.reload, ['KeyR']);
 });
 
 console.log(`\n${passed} tests passed.`);

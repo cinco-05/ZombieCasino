@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <title>HOUSE OF THE UNDEAD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="A 1930s rubber-hose cartoon shooter for one to four players online. Fight the undead gamblers of a haunted casino, then bet your chips at blackjack, roulette, poker and the slots for upgrades.">
+<meta name="theme-color" content="#07040c">
+<meta property="og:type" content="website">
+<meta property="og:title" content="HOUSE OF THE UNDEAD">
+<meta property="og:description" content="A 1930s cartoon casino, a horde of undead gamblers, and up to four friends. Shoot, gamble, and beat the house. Plays in the browser.">
+<meta property="og:image" content="https://cinco-05.github.io/zombiecasino/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23b3122e'/%3E%3Cg stroke='%23f4efe2' stroke-width='7'%3E%3Cpath d='M32 2v10M32 52v10M2 32h10M52 32h10M10.8 10.8l7 7M46.2 46.2l7 7M53.2 10.8l-7 7M17.8 46.2l-7 7'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='17' fill='%23f4efe2'/%3E%3Cpath d='M32 20c-6.6 0-11 4.4-11 10.2 0 3.6 1.8 6.2 4.4 7.6V42h13.2v-4.2c2.6-1.4 4.4-4 4.4-7.6C43 24.4 38.6 20 32 20z' fill='%231d130c'/%3E%3Ccircle cx='27.6' cy='31' r='2.9' fill='%23f4efe2'/%3E%3Ccircle cx='36.4' cy='31' r='2.9' fill='%23f4efe2'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles/main.css">
 <script type="importmap">
 { "imports": { "three": "./vendor/three.module.js" } }
@@ -23,8 +31,50 @@
     <h1 class="title-main small-title"><span class="t-house">HOUSE OF THE</span><span class="t-undead">UNDEAD</span></h1>
     <div class="load-bar"><div id="load-bar-fill"></div></div>
     <div id="load-status">Unlocking the doors…</div>
+    <div id="load-tip"></div>
+    <div id="load-fail" class="hidden"><p id="load-fail-msg"></p><button class="btn btn-big" onclick="location.reload()">TRY AGAIN</button></div>
   </div>
 </div>
+<script>
+// if the game can't start (no WebGL 2, or something breaks while loading),
+// say so and say what to try, instead of a loading bar that never moves
+window.HOTU_fail = function (title, msg) {
+  if (window.HOTU_failed) return;
+  window.HOTU_failed = true;
+  var s = document.getElementById('load-status'), f = document.getElementById('load-fail');
+  if (!s || !f) return;
+  s.textContent = title;
+  s.className = 'fail';
+  document.getElementById('load-fail-msg').textContent = msg;
+  f.classList.remove('hidden');
+};
+// a house tip under the bar while the floor is built
+(function () {
+  var tips = [
+    'Every kill pays chips. Fast kills build a streak, and the streak pays more.',
+    'Win at the tables and pick an upgrade. Lose, and the next round gets a penalty.',
+    'Down in co-op? A friend who stands over you and holds the use key deals you back in.',
+    'Type a seed at the Coat Check to replay the exact same night, or share yours.',
+    'The Pit Boss walks the floor on round 5. The House Dealer deals on round 10.',
+    'A dash makes you untouchable for a moment. Use it to get through a crowd.',
+    'LUCKY UNDEAD pays back more than it takes. Most slot machines can\'t say that.',
+    'Cocktail automats sell perks mid-round. Look for the glow.',
+  ];
+  var i = Math.floor(Math.random() * tips.length), el = document.getElementById('load-tip');
+  var show = function () { if (!window.HOTU_failed && el) el.textContent = tips[i++ % tips.length]; };
+  show();
+  var iv = setInterval(function () { if (!document.getElementById('load-tip')) clearInterval(iv); else show(); }, 4500);
+})();
+window.HOTU_glOk = (function () {
+  try { return !!document.createElement('canvas').getContext('webgl2'); } catch (e) { return false; }
+})();
+addEventListener('error', function (e) {
+  if (!window.HOTU) HOTU_fail('THE DOORS ARE STUCK', 'Something went wrong while the casino was loading (' + (e.message || 'unknown error') + '). Reload to try again; if it keeps happening, try an up-to-date Chrome, Edge or Firefox.');
+});
+addEventListener('unhandledrejection', function (e) {
+  if (!window.HOTU) HOTU_fail('THE DOORS ARE STUCK', 'Something went wrong while the casino was loading (' + ((e.reason && e.reason.message) || e.reason || 'unknown error') + '). Reload to try again; if it keeps happening, try an up-to-date Chrome, Edge or Firefox.');
+});
+</script>
 
 <!-- ============================== HUD ==================================== -->
 <div id="hud">
@@ -87,6 +137,7 @@
   <div id="banner-el"></div>
   <div id="prompt"></div>
   <div id="countdown-el"></div>
+  <div id="coach"></div>
 </div>
 
 <!-- ============================ MAIN MENU ================================= -->
@@ -100,6 +151,7 @@
       <button id="btn-start" class="menu-item primary">ENTER THE CASINO</button>
       <button id="btn-coop" class="menu-item">🤝 PLAY WITH FRIENDS (UP TO 4)</button>
       <button id="btn-seed" class="menu-item seed">🎲 PLAY A SEED</button>
+      <button id="btn-howto" class="menu-item">❓ HOW TO PLAY</button>
       <button id="btn-vault" class="menu-item">THE VAULT</button>
       <button id="btn-markers" class="menu-item">🏆 MARKERS &amp; CHIPS</button>
       <button id="btn-settings-main" class="menu-item">SETTINGS</button>
@@ -107,6 +159,7 @@
       <div id="menu-loyalty"></div>
     </nav>
     <div id="highscore-display" class="dim"></div>
+    <p id="touch-note" class="hidden">🖱 This game is played with a keyboard and mouse. Open the link on a computer to play.</p>
   </div>
   <div class="menu-controls">
     <div><kbd>WASD</kbd> move</div><div><kbd>MOUSE</kbd> aim · fire</div><div><kbd>RMB</kbd> iron sights</div>
@@ -115,7 +168,7 @@
     <div><kbd>F</kbd> pistol-whip</div><div><kbd>R</kbd> reload</div><div><kbd>1–3</kbd> / <kbd>WHEEL</kbd> guns</div>
     <div><kbd>TAB</kbd> scoreboard</div><div><kbd>ESC</kbd> pause</div><div><kbd>F11</kbd> fullscreen</div><div><kbd>F3</kbd> debug</div>
   </div>
-  <p class="fine-print">All chips and wagers are fictional game currency with no real-world value.</p>
+  <p class="fine-print">v1.0 · All chips and wagers are fictional game currency with no real-world value.</p>
 </div>
 
 <!-- ============================ SCOREBOARD (hold TAB) ===================== -->
@@ -125,7 +178,7 @@
     <thead><tr><th class="sb-name">PLAYER</th><th>PING</th><th>KILLS</th><th>DEATHS</th><th>DAMAGE</th><th>CHIPS</th></tr></thead>
     <tbody id="sb-rows"></tbody>
   </table>
-  <div class="sb-foot">Hold <kbd>TAB</kbd> · deaths count every time you go down</div>
+  <div class="sb-foot">Hold <kbd id="sb-key">TAB</kbd> · deaths count every time you go down</div>
 </div>
 
 <!-- ============================ PAUSE MENU ================================ -->
@@ -146,17 +199,42 @@
   </div>
 </div>
 
+<!-- ============================== HOW TO PLAY ============================== -->
+<div id="howto-panel" class="panel fullscreen hidden">
+  <div class="deco-card wide howto-card">
+    <h2>HOW THE HOUSE PLAYS</h2>
+    <p class="dim">A night in a casino that never closed. Ten rounds, two bosses, and every chip you win goes back on the felt.</p>
+    <ol class="howto-steps">
+      <li><i>🧟</i><b>SURVIVE THE ROUND</b><span>The dead gamblers walk in waves. Shoot them, pistol-whip the close ones, dash through a crowd. Clear the floor to end the round.</span></li>
+      <li><i>🪙</i><b>EARN CHIPS</b><span>Every kill pays, and fast kills build a streak that pays more. Spend chips mid-round on cocktail perks, paid doors to new wings and the Big Six wheel.</span></li>
+      <li><i>🃏</i><b>GAMBLE FOR UPGRADES</b><span>Between rounds the House Shop deals cards. Sit at blackjack, roulette or poker: win and pick an upgrade of the card's tier; lose and the next round gets a penalty. The slot machine pays out in chips.</span></li>
+      <li><i>☠</i><b>BEAT THE HOUSE</b><span>The Pit Boss walks the floor on round 5 and the House Dealer deals on round 10. Beat the house to cash out, or stay for endless rounds.</span></li>
+    </ol>
+    <div class="howto-extra">
+      <div><b>🤝 WITH FRIENDS</b>Up to four players. Host a table, send the invite link. Everyone gets their own shop. Hold <kbd class="hk" data-act="use">E</kbd> over a downed friend to revive them.</div>
+      <div><b>🎲 SEEDS</b>Every run is dealt from a seed. Type one in at the Coat Check to replay the exact same night, or share yours.</div>
+      <div><b>⌨ CONTROLS</b><kbd class="hk" data-act="move">WASD</kbd> move · <kbd class="hk" data-act="dash">Q</kbd> dash · <kbd class="hk" data-act="use">E</kbd> use · <kbd class="hk" data-act="reload">R</kbd> reload · <kbd class="hk" data-act="lethal">G</kbd> lethal · <kbd>ESC</kbd> pause. Rebind any key in Settings → Controls.</div>
+    </div>
+    <button id="btn-howto-go" class="btn btn-big">GOT IT</button>
+    <p class="fine-print howto-credits">Every model, texture, sound and note is made by code as you play. Built on three.js and PeerJS (both MIT licensed). The band plays "When the Saints Go Marching In" (traditional) and two originals. All chips are fictional; no real money, ever.</p>
+  </div>
+</div>
+
 <!-- ============================== CO-OP LOBBY ============================== -->
 <div id="coop-panel" class="panel fullscreen hidden">
   <div class="deco-card">
     <h2>PLAY WITH FRIENDS</h2>
-    <p class="dim">Up to four gamblers, one house. Host a table and send your friends the code — or type theirs.</p>
+    <p class="dim">Up to four gamblers, one house. Host a table and send your friends the invite link, or type a friend's room code to join theirs.</p>
     <div class="coop-name-row"><label for="coop-name">YOUR NAME</label><input id="coop-name" maxlength="16" spellcheck="false" autocomplete="off"></div>
     <button id="btn-coop-host" class="btn btn-big">HOST A TABLE</button>
     <div id="coop-code-wrap" class="hidden">
       <div class="dim small">ROOM CODE</div>
       <div id="coop-code">-----</div>
-      <button id="btn-coop-copy" class="btn small-btn">COPY</button>
+      <div class="btn-row">
+        <button id="btn-coop-invite" class="btn btn-gold small-btn hidden">🔗 COPY INVITE LINK</button>
+        <button id="btn-coop-copy" class="btn small-btn">COPY CODE</button>
+      </div>
+      <div id="coop-invite" class="dim small hidden"></div>
     </div>
     <div class="coop-or dim small">— or join a table —</div>
     <div class="coop-join">
@@ -180,6 +258,7 @@
     <button id="btn-resume" class="btn btn-big">RESUME</button>
     <button id="btn-restart-pause" class="btn">RESTART RUN</button>
     <button id="btn-settings-pause" class="btn">SETTINGS</button>
+    <button id="btn-howto-pause" class="btn">HOW TO PLAY</button>
     <button id="btn-debug-pause" class="btn small-btn">🛠 DEBUG MODE (F3)</button>
     <button id="btn-quit-pause" class="btn btn-danger">QUIT TO MENU</button>
   </div>
@@ -189,6 +268,11 @@
 <div id="settings-panel" class="panel fullscreen hidden">
   <div class="deco-card wide">
     <h2>SETTINGS</h2>
+    <div class="set-tabs" role="tablist">
+      <button class="set-tab on" data-page="game" role="tab">PICTURE &amp; SOUND</button>
+      <button class="set-tab" data-page="controls" role="tab">CONTROLS</button>
+    </div>
+    <div class="set-page" data-page="game">
     <div class="setting-row"><label>Art style<br><span class="dim small">Restarts the game to apply</span></label>
       <select id="set-art">
         <option value="1930s">1930s Cartoon — ink, rubber hose, old film</option>
@@ -204,11 +288,9 @@
       </select></div>
     <div class="setting-row"><label>Field of view <span id="fov-val" class="gold"></span></label>
       <input id="set-fov" type="range" min="60" max="100" step="1" value="75"></div>
-    <div class="setting-row"><label>Mouse sensitivity</label>
-      <input id="set-sensitivity" type="range" min="0.2" max="3" step="0.1" value="1"></div>
     <div class="setting-row"><label>Master volume</label>
       <input id="set-master" type="range" min="0" max="1" step="0.05" value="0.8"></div>
-    <div class="setting-row"><label>Music volume</label>
+    <div class="setting-row"><label>Music volume<br><span class="dim small">The band, and the casino around it</span></label>
       <input id="set-music" type="range" min="0" max="1" step="0.05" value="0.5"></div>
     <div class="setting-row"><label>Effects volume</label>
       <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
@@ -216,9 +298,26 @@
       <input id="set-show-perf" type="checkbox" checked></div>
     <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
       <input id="set-reduced-flash" type="checkbox"></div>
+    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
+      <input id="set-tips" type="checkbox" checked></div>
     <div class="setting-row"><label>Display</label>
       <button id="btn-fullscreen" class="btn small-btn">TOGGLE FULLSCREEN (F11)</button>
       <button id="btn-debug-settings" class="btn small-btn">🛠 DEBUG MODE (F3)</button></div>
+    </div>
+    <div class="set-page hidden" data-page="controls">
+    <div class="setting-row"><label>Mouse sensitivity <span id="sens-val" class="gold"></span></label>
+      <input id="set-sensitivity" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+    <div class="setting-row"><label>Invert mouse Y<br><span class="dim small">Push the mouse forward to look down</span></label>
+      <input id="set-invert-y" type="checkbox"></div>
+    <div class="setting-row"><label>Aim down sights</label>
+      <select id="set-aim-mode"><option value="hold">Hold right mouse</option><option value="toggle">Click right mouse to toggle</option></select></div>
+    <div class="setting-row"><label>Sprint</label>
+      <select id="set-sprint-mode"><option value="hold">Hold the sprint key</option><option value="toggle">Tap to toggle (stops when you stop)</option></select></div>
+    <div class="bind-head"><span>KEYS</span><span class="dim small">Click a key, then press the new one. Keys that clash swap places.</span></div>
+    <div id="bind-grid" class="bind-grid"></div>
+    <p class="bind-fixed dim small"><kbd>LEFT MOUSE</kbd> fire · <kbd>RIGHT MOUSE</kbd> aim · <kbd>WHEEL</kbd> switch guns · <kbd>ESC</kbd> pause · <kbd>F11</kbd> fullscreen<br>At the tables: <kbd>H</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>P</kbd> blackjack · <kbd>1–5</kbd> <kbd>SPACE</kbd> poker · <kbd>SPACE</kbd> <kbd>1–3</kbd> slots</p>
+    <button id="btn-binds-reset" class="btn small-btn">RESET KEYS TO DEFAULT</button>
+    </div>
     <button id="btn-settings-close" class="btn btn-big">DONE</button>
   </div>
 </div>

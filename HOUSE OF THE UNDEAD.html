@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <title>HOUSE OF THE UNDEAD</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="A 1930s rubber-hose cartoon shooter for one to four players online. Fight the undead gamblers of a haunted casino, then bet your chips at blackjack, roulette, poker and the slots for upgrades.">
+<meta name="theme-color" content="#07040c">
+<meta property="og:type" content="website">
+<meta property="og:title" content="HOUSE OF THE UNDEAD">
+<meta property="og:description" content="A 1930s cartoon casino, a horde of undead gamblers, and up to four friends. Shoot, gamble, and beat the house. Plays in the browser.">
+<meta property="og:image" content="https://cinco-05.github.io/zombiecasino/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23b3122e'/%3E%3Cg stroke='%23f4efe2' stroke-width='7'%3E%3Cpath d='M32 2v10M32 52v10M2 32h10M52 32h10M10.8 10.8l7 7M46.2 46.2l7 7M53.2 10.8l-7 7M17.8 46.2l-7 7'/%3E%3C/g%3E%3Ccircle cx='32' cy='32' r='17' fill='%23f4efe2'/%3E%3Cpath d='M32 20c-6.6 0-11 4.4-11 10.2 0 3.6 1.8 6.2 4.4 7.6V42h13.2v-4.2c2.6-1.4 4.4-4 4.4-7.6C43 24.4 38.6 20 32 20z' fill='%231d130c'/%3E%3Ccircle cx='27.6' cy='31' r='2.9' fill='%23f4efe2'/%3E%3Ccircle cx='36.4' cy='31' r='2.9' fill='%23f4efe2'/%3E%3C/svg%3E">
 <style>
 /* HOUSE OF THE UNDEAD — art-deco noir casino UI.
    Fonts are Windows system faces (the game runs offline): Bahnschrift for
@@ -53,6 +61,12 @@ body { font-family: var(--ui); color: var(--text); user-select: none; -webkit-fo
 .load-bar { height: 4px; margin: 28px auto 12px; background: rgba(216,178,58,0.15); overflow: hidden; }
 #load-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); box-shadow: 0 0 12px var(--gold); transition: width 0.2s; }
 #load-status { font-family: var(--deco); font-stretch: 87.5%; font-weight: 600; font-style: normal; color: var(--dim); letter-spacing: 1px; }
+#load-status.fail { color: #ff5a6a; font-size: 20px; }
+#load-tip { margin-top: 18px; min-height: 2.6em; font-size: 14px; line-height: 1.6; color: var(--text); opacity: 0.75; }
+#load-status.fail ~ #load-tip { display: none; }
+#load-fail { margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+#load-fail p { color: var(--text); line-height: 1.6; font-size: 15px; }
+#touch-note { margin-top: 14px; max-width: 420px; padding: 10px 14px; border: 1px solid rgba(255,90,106,0.6); background: rgba(255,45,85,0.12); color: var(--text); font-size: 14px; line-height: 1.5; }
 
 /* ============================ TITLE + DECO =============================== */
 .title-main { font-family: var(--logo); font-weight: 700; line-height: 0.92; letter-spacing: 0.06em; }
@@ -954,6 +968,26 @@ body[data-art^="1930"] #upgrade-stats { color: var(--paper); text-shadow: 0 1px 
 .setting-row input[type=range] { width: 200px; accent-color: var(--gold); }
 .setting-row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--gold); }
 .setting-row select { font-family: var(--ui); font-size: 14px; background: #140a1c; color: var(--text); border: 1px solid rgba(216,178,58,0.5); padding: 6px 10px; }
+.set-tabs { display: flex; gap: 4px; border-bottom: 1px solid rgba(216,178,58,0.35); width: min(560px, 88vw); margin-bottom: 4px; }
+.set-tab { flex: 1; font-family: var(--deco); font-size: 13px; letter-spacing: 2px; padding: 9px 10px; background: none; color: var(--dim);
+  border: 1px solid transparent; border-bottom: none; cursor: pointer; }
+.set-tab:hover { color: var(--gold-hi); }
+.set-tab.on { color: var(--gold-hi); border-color: rgba(216,178,58,0.45); background: rgba(216,178,58,0.1); }
+.set-page { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.set-page.hidden { display: none; }
+.bind-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; width: min(560px, 88vw); margin-top: 14px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(216,178,58,0.35); font-family: var(--deco); letter-spacing: 2px; color: var(--gold-hi); text-align: left; }
+.bind-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; width: min(560px, 88vw); }
+.bind-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px; text-align: left; }
+.bind-key { min-width: 84px; font-family: var(--ui); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--gold-hi); background: rgba(216,178,58,0.08);
+  border: 1px solid rgba(216,178,58,0.5); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+.bind-key small { font-weight: 400; color: var(--dim); margin-left: 6px; font-size: 10px; }
+.bind-key:hover { background: rgba(216,178,58,0.2); }
+.bind-key.listening { color: #fff; border-color: var(--red); background: rgba(255,45,85,0.18); animation: bindPulse 0.9s ease-in-out infinite; }
+.bind-row.swapped .bind-key, .bind-key.swapped { border-color: var(--cyan); }
+@keyframes bindPulse { 50% { background: rgba(255,45,85,0.04); } }
+.bind-fixed { width: min(560px, 88vw); line-height: 2; margin: 10px 0 6px; text-align: left; }
+@media (max-width: 640px) { .bind-grid { grid-template-columns: 1fr; } }
 
 /* summary */
 #summary-stats { display: flex; flex-direction: column; gap: 7px; font-size: 16px; margin: 8px 0 12px; }
@@ -988,7 +1022,8 @@ body[data-art^="1930"] #upgrade-stats { color: var(--paper); text-shadow: 0 1px 
 body[data-art="1930bw"] #hud, body[data-art="1930bw"] .panel { filter: grayscale(1) contrast(1.05); }
 
 /* ------------------------------- co-op ------------------------------------ */
-#coop-code-wrap { margin: 12px auto 4px; }
+#coop-code-wrap { margin: 12px auto 4px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#coop-invite { max-width: 420px; word-break: break-all; user-select: text; font-family: monospace; opacity: 0.8; }
 #coop-code { font-family: var(--deco); font-stretch: 87.5%; font-weight: 700; font-size: 54px; letter-spacing: 0.1em; color: var(--gold-hi); text-shadow: 0 0 18px rgba(216,178,58,0.5); user-select: text; }
 .coop-or { margin: 14px 0 6px; }
 .coop-join { display: flex; gap: 8px; justify-content: center; }
@@ -1347,6 +1382,55 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
 #coop-panel[data-role] #btn-coop-host, #coop-panel[data-role] .coop-or, #coop-panel[data-role] .coop-join { display: none; }
 #coop-panel .deco-card { gap: 10px; }
 
+/* ---------------------- the first night's tips (coach.js) ---------------------- */
+#coach { position: absolute; left: 28px; top: 210px; width: 300px; padding: 10px 14px 12px; pointer-events: none;
+  background: linear-gradient(180deg, rgba(14,8,20,0.9), rgba(5,2,8,0.9)); border: 1px solid rgba(216,178,58,0.55); border-left: 3px solid var(--gold);
+  border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.55); opacity: 0; transform: translateX(-24px); transition: opacity 0.3s, transform 0.3s; overflow: hidden; }
+#coach.show { opacity: 1; transform: none; }
+.coach-tag { position: absolute; right: 10px; top: 8px; font-size: 9px; letter-spacing: 3px; color: var(--gold); }
+.coach-title { font-family: var(--deco); font-stretch: 87.5%; font-weight: 600; font-size: 15px; letter-spacing: 0.1em; color: var(--gold-hi); margin-bottom: 5px; }
+.coach-body { font-size: 13px; line-height: 1.6; color: var(--text); }
+.coach-body kbd { font-size: 10.5px; margin-right: 1px; }
+.coach-body b { color: var(--gold-hi); }
+.coach-timer { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--gold); transform-origin: left; }
+#coach.show .coach-timer { animation: coachLife var(--life, 7s) linear forwards; }
+@keyframes coachLife { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (max-height: 640px) { #coach { top: 180px; } }
+body[data-art^="1930"] #coach { background: var(--paper, #f4e8c8); border-color: var(--ink, #1a1208); color: var(--ink, #1a1208); box-shadow: 4px 4px 0 var(--ink, #1a1208); }
+body[data-art^="1930"] .coach-title, body[data-art^="1930"] .coach-body b { color: #b3122e; }
+body[data-art^="1930"] .coach-body { color: var(--ink, #1a1208); }
+body[data-art^="1930"] .coach-tag { color: #8a6a14; }
+body[data-art^="1930"] .coach-timer { background: #b3122e; }
+
+/* ------------------------------- how to play ---------------------------------- */
+.howto-card { gap: 14px; }
+.howto-steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; counter-reset: step; }
+.howto-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px 14px; text-align: center;
+  border: 1px solid rgba(216,178,58,0.4); border-radius: 6px; background: rgba(216,178,58,0.06); counter-increment: step; }
+.howto-steps li::before { content: counter(step); position: absolute; left: 8px; top: 6px; font-family: var(--logo); font-size: 18px; color: var(--gold); }
+.howto-steps i { font-style: normal; font-size: 30px; line-height: 1.1; }
+.howto-steps b { font-family: var(--deco); font-stretch: 87.5%; font-size: 14px; letter-spacing: 0.1em; color: var(--gold-hi); }
+.howto-steps span { font-size: 12.5px; line-height: 1.55; color: var(--text); }
+.howto-extra { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; font-size: 13px; line-height: 1.7; }
+.howto-extra div { padding: 8px 12px; border-left: 2px solid var(--gold); background: rgba(0,0,0,0.25); }
+.howto-extra b { display: inline-block; margin-right: 10px; color: var(--gold-hi); letter-spacing: 0.08em; font-family: var(--deco); }
+@media (max-width: 860px) { .howto-steps { grid-template-columns: 1fr 1fr; } }
+body[data-art^="1930"] .howto-steps li { background: rgba(255,255,255,0.35); border-color: rgba(26,18,8,0.5); }
+body[data-art^="1930"] .howto-steps b, body[data-art^="1930"] .howto-extra b { color: #b3122e; }
+body[data-art^="1930"] .howto-steps span, body[data-art^="1930"] .howto-extra { color: inherit; }
+body[data-art^="1930"] .howto-extra div { background: rgba(255,255,255,0.3); border-left-color: #b3122e; }
+
+/* 1930s: drop-downs on paper, not dark glass (they were unreadable) */
+body[data-art^="1930"] .setting-row select { background: var(--paper2, #e4d3a8); color: var(--ink, #1d130c); border: 2px solid var(--ink, #1d130c); border-radius: 8px; font-weight: 600; }
+body[data-art^="1930"] .setting-row select option { background: var(--paper, #f1e5c6); color: var(--ink, #1d130c); }
+body[data-art^="1930"] .set-tabs { border-bottom-color: var(--ink, #1d130c); }
+body[data-art^="1930"] .set-tab.on { border-color: var(--ink, #1d130c); background: #ffd24a; color: var(--ink, #1d130c); }
+body[data-art^="1930"] .bind-key { background: var(--paper2, #e4d3a8); border: 2px solid var(--ink, #1d130c); color: #b3122e; }
+body[data-art^="1930"] .bind-key:hover { background: #ffd24a; }
+body[data-art^="1930"] .bind-key.listening { background: #b3122e; color: var(--paper, #f1e5c6); }
+body[data-art^="1930"] .bind-head { border-bottom-color: var(--ink, #1d130c); }
+body[data-art^="1930"] #coach kbd { color: #b3122e; border-color: rgba(29,19,12,0.55); background: rgba(255,255,255,0.35); }
+
 </style>
 </head>
 <body>
@@ -1363,8 +1447,50 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
     <h1 class="title-main small-title"><span class="t-house">HOUSE OF THE</span><span class="t-undead">UNDEAD</span></h1>
     <div class="load-bar"><div id="load-bar-fill"></div></div>
     <div id="load-status">Unlocking the doors…</div>
+    <div id="load-tip"></div>
+    <div id="load-fail" class="hidden"><p id="load-fail-msg"></p><button class="btn btn-big" onclick="location.reload()">TRY AGAIN</button></div>
   </div>
 </div>
+<script>
+// if the game can't start (no WebGL 2, or something breaks while loading),
+// say so and say what to try, instead of a loading bar that never moves
+window.HOTU_fail = function (title, msg) {
+  if (window.HOTU_failed) return;
+  window.HOTU_failed = true;
+  var s = document.getElementById('load-status'), f = document.getElementById('load-fail');
+  if (!s || !f) return;
+  s.textContent = title;
+  s.className = 'fail';
+  document.getElementById('load-fail-msg').textContent = msg;
+  f.classList.remove('hidden');
+};
+// a house tip under the bar while the floor is built
+(function () {
+  var tips = [
+    'Every kill pays chips. Fast kills build a streak, and the streak pays more.',
+    'Win at the tables and pick an upgrade. Lose, and the next round gets a penalty.',
+    'Down in co-op? A friend who stands over you and holds the use key deals you back in.',
+    'Type a seed at the Coat Check to replay the exact same night, or share yours.',
+    'The Pit Boss walks the floor on round 5. The House Dealer deals on round 10.',
+    'A dash makes you untouchable for a moment. Use it to get through a crowd.',
+    'LUCKY UNDEAD pays back more than it takes. Most slot machines can\'t say that.',
+    'Cocktail automats sell perks mid-round. Look for the glow.',
+  ];
+  var i = Math.floor(Math.random() * tips.length), el = document.getElementById('load-tip');
+  var show = function () { if (!window.HOTU_failed && el) el.textContent = tips[i++ % tips.length]; };
+  show();
+  var iv = setInterval(function () { if (!document.getElementById('load-tip')) clearInterval(iv); else show(); }, 4500);
+})();
+window.HOTU_glOk = (function () {
+  try { return !!document.createElement('canvas').getContext('webgl2'); } catch (e) { return false; }
+})();
+addEventListener('error', function (e) {
+  if (!window.HOTU) HOTU_fail('THE DOORS ARE STUCK', 'Something went wrong while the casino was loading (' + (e.message || 'unknown error') + '). Reload to try again; if it keeps happening, try an up-to-date Chrome, Edge or Firefox.');
+});
+addEventListener('unhandledrejection', function (e) {
+  if (!window.HOTU) HOTU_fail('THE DOORS ARE STUCK', 'Something went wrong while the casino was loading (' + ((e.reason && e.reason.message) || e.reason || 'unknown error') + '). Reload to try again; if it keeps happening, try an up-to-date Chrome, Edge or Firefox.');
+});
+</script>
 
 <!-- ============================== HUD ==================================== -->
 <div id="hud">
@@ -1427,6 +1553,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
   <div id="banner-el"></div>
   <div id="prompt"></div>
   <div id="countdown-el"></div>
+  <div id="coach"></div>
 </div>
 
 <!-- ============================ MAIN MENU ================================= -->
@@ -1440,6 +1567,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
       <button id="btn-start" class="menu-item primary">ENTER THE CASINO</button>
       <button id="btn-coop" class="menu-item">🤝 PLAY WITH FRIENDS (UP TO 4)</button>
       <button id="btn-seed" class="menu-item seed">🎲 PLAY A SEED</button>
+      <button id="btn-howto" class="menu-item">❓ HOW TO PLAY</button>
       <button id="btn-vault" class="menu-item">THE VAULT</button>
       <button id="btn-markers" class="menu-item">🏆 MARKERS &amp; CHIPS</button>
       <button id="btn-settings-main" class="menu-item">SETTINGS</button>
@@ -1447,6 +1575,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
       <div id="menu-loyalty"></div>
     </nav>
     <div id="highscore-display" class="dim"></div>
+    <p id="touch-note" class="hidden">🖱 This game is played with a keyboard and mouse. Open the link on a computer to play.</p>
   </div>
   <div class="menu-controls">
     <div><kbd>WASD</kbd> move</div><div><kbd>MOUSE</kbd> aim · fire</div><div><kbd>RMB</kbd> iron sights</div>
@@ -1455,7 +1584,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
     <div><kbd>F</kbd> pistol-whip</div><div><kbd>R</kbd> reload</div><div><kbd>1–3</kbd> / <kbd>WHEEL</kbd> guns</div>
     <div><kbd>TAB</kbd> scoreboard</div><div><kbd>ESC</kbd> pause</div><div><kbd>F11</kbd> fullscreen</div><div><kbd>F3</kbd> debug</div>
   </div>
-  <p class="fine-print">All chips and wagers are fictional game currency with no real-world value.</p>
+  <p class="fine-print">v1.0 · All chips and wagers are fictional game currency with no real-world value.</p>
 </div>
 
 <!-- ============================ SCOREBOARD (hold TAB) ===================== -->
@@ -1465,7 +1594,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
     <thead><tr><th class="sb-name">PLAYER</th><th>PING</th><th>KILLS</th><th>DEATHS</th><th>DAMAGE</th><th>CHIPS</th></tr></thead>
     <tbody id="sb-rows"></tbody>
   </table>
-  <div class="sb-foot">Hold <kbd>TAB</kbd> · deaths count every time you go down</div>
+  <div class="sb-foot">Hold <kbd id="sb-key">TAB</kbd> · deaths count every time you go down</div>
 </div>
 
 <!-- ============================ PAUSE MENU ================================ -->
@@ -1486,17 +1615,42 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
   </div>
 </div>
 
+<!-- ============================== HOW TO PLAY ============================== -->
+<div id="howto-panel" class="panel fullscreen hidden">
+  <div class="deco-card wide howto-card">
+    <h2>HOW THE HOUSE PLAYS</h2>
+    <p class="dim">A night in a casino that never closed. Ten rounds, two bosses, and every chip you win goes back on the felt.</p>
+    <ol class="howto-steps">
+      <li><i>🧟</i><b>SURVIVE THE ROUND</b><span>The dead gamblers walk in waves. Shoot them, pistol-whip the close ones, dash through a crowd. Clear the floor to end the round.</span></li>
+      <li><i>🪙</i><b>EARN CHIPS</b><span>Every kill pays, and fast kills build a streak that pays more. Spend chips mid-round on cocktail perks, paid doors to new wings and the Big Six wheel.</span></li>
+      <li><i>🃏</i><b>GAMBLE FOR UPGRADES</b><span>Between rounds the House Shop deals cards. Sit at blackjack, roulette or poker: win and pick an upgrade of the card's tier; lose and the next round gets a penalty. The slot machine pays out in chips.</span></li>
+      <li><i>☠</i><b>BEAT THE HOUSE</b><span>The Pit Boss walks the floor on round 5 and the House Dealer deals on round 10. Beat the house to cash out, or stay for endless rounds.</span></li>
+    </ol>
+    <div class="howto-extra">
+      <div><b>🤝 WITH FRIENDS</b>Up to four players. Host a table, send the invite link. Everyone gets their own shop. Hold <kbd class="hk" data-act="use">E</kbd> over a downed friend to revive them.</div>
+      <div><b>🎲 SEEDS</b>Every run is dealt from a seed. Type one in at the Coat Check to replay the exact same night, or share yours.</div>
+      <div><b>⌨ CONTROLS</b><kbd class="hk" data-act="move">WASD</kbd> move · <kbd class="hk" data-act="dash">Q</kbd> dash · <kbd class="hk" data-act="use">E</kbd> use · <kbd class="hk" data-act="reload">R</kbd> reload · <kbd class="hk" data-act="lethal">G</kbd> lethal · <kbd>ESC</kbd> pause. Rebind any key in Settings → Controls.</div>
+    </div>
+    <button id="btn-howto-go" class="btn btn-big">GOT IT</button>
+    <p class="fine-print howto-credits">Every model, texture, sound and note is made by code as you play. Built on three.js and PeerJS (both MIT licensed). The band plays "When the Saints Go Marching In" (traditional) and two originals. All chips are fictional; no real money, ever.</p>
+  </div>
+</div>
+
 <!-- ============================== CO-OP LOBBY ============================== -->
 <div id="coop-panel" class="panel fullscreen hidden">
   <div class="deco-card">
     <h2>PLAY WITH FRIENDS</h2>
-    <p class="dim">Up to four gamblers, one house. Host a table and send your friends the code — or type theirs.</p>
+    <p class="dim">Up to four gamblers, one house. Host a table and send your friends the invite link, or type a friend's room code to join theirs.</p>
     <div class="coop-name-row"><label for="coop-name">YOUR NAME</label><input id="coop-name" maxlength="16" spellcheck="false" autocomplete="off"></div>
     <button id="btn-coop-host" class="btn btn-big">HOST A TABLE</button>
     <div id="coop-code-wrap" class="hidden">
       <div class="dim small">ROOM CODE</div>
       <div id="coop-code">-----</div>
-      <button id="btn-coop-copy" class="btn small-btn">COPY</button>
+      <div class="btn-row">
+        <button id="btn-coop-invite" class="btn btn-gold small-btn hidden">🔗 COPY INVITE LINK</button>
+        <button id="btn-coop-copy" class="btn small-btn">COPY CODE</button>
+      </div>
+      <div id="coop-invite" class="dim small hidden"></div>
     </div>
     <div class="coop-or dim small">— or join a table —</div>
     <div class="coop-join">
@@ -1520,6 +1674,7 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
     <button id="btn-resume" class="btn btn-big">RESUME</button>
     <button id="btn-restart-pause" class="btn">RESTART RUN</button>
     <button id="btn-settings-pause" class="btn">SETTINGS</button>
+    <button id="btn-howto-pause" class="btn">HOW TO PLAY</button>
     <button id="btn-debug-pause" class="btn small-btn">🛠 DEBUG MODE (F3)</button>
     <button id="btn-quit-pause" class="btn btn-danger">QUIT TO MENU</button>
   </div>
@@ -1529,6 +1684,11 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
 <div id="settings-panel" class="panel fullscreen hidden">
   <div class="deco-card wide">
     <h2>SETTINGS</h2>
+    <div class="set-tabs" role="tablist">
+      <button class="set-tab on" data-page="game" role="tab">PICTURE &amp; SOUND</button>
+      <button class="set-tab" data-page="controls" role="tab">CONTROLS</button>
+    </div>
+    <div class="set-page" data-page="game">
     <div class="setting-row"><label>Art style<br><span class="dim small">Restarts the game to apply</span></label>
       <select id="set-art">
         <option value="1930s">1930s Cartoon — ink, rubber hose, old film</option>
@@ -1544,11 +1704,9 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
       </select></div>
     <div class="setting-row"><label>Field of view <span id="fov-val" class="gold"></span></label>
       <input id="set-fov" type="range" min="60" max="100" step="1" value="75"></div>
-    <div class="setting-row"><label>Mouse sensitivity</label>
-      <input id="set-sensitivity" type="range" min="0.2" max="3" step="0.1" value="1"></div>
     <div class="setting-row"><label>Master volume</label>
       <input id="set-master" type="range" min="0" max="1" step="0.05" value="0.8"></div>
-    <div class="setting-row"><label>Music volume</label>
+    <div class="setting-row"><label>Music volume<br><span class="dim small">The band, and the casino around it</span></label>
       <input id="set-music" type="range" min="0" max="1" step="0.05" value="0.5"></div>
     <div class="setting-row"><label>Effects volume</label>
       <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="0.9"></div>
@@ -1556,9 +1714,26 @@ body[data-art^="1930"] .sb-head span, body[data-art^="1930"] .sb-foot { color: #
       <input id="set-show-perf" type="checkbox" checked></div>
     <div class="setting-row"><label>Reduced flashing<br><span class="dim small">Softer muzzle flash, no strobing lights, steady damage indicator</span></label>
       <input id="set-reduced-flash" type="checkbox"></div>
+    <div class="setting-row"><label>Tips for new players<br><span class="dim small">Short pointers the first time something comes up. Turning it on shows them all again</span></label>
+      <input id="set-tips" type="checkbox" checked></div>
     <div class="setting-row"><label>Display</label>
       <button id="btn-fullscreen" class="btn small-btn">TOGGLE FULLSCREEN (F11)</button>
       <button id="btn-debug-settings" class="btn small-btn">🛠 DEBUG MODE (F3)</button></div>
+    </div>
+    <div class="set-page hidden" data-page="controls">
+    <div class="setting-row"><label>Mouse sensitivity <span id="sens-val" class="gold"></span></label>
+      <input id="set-sensitivity" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+    <div class="setting-row"><label>Invert mouse Y<br><span class="dim small">Push the mouse forward to look down</span></label>
+      <input id="set-invert-y" type="checkbox"></div>
+    <div class="setting-row"><label>Aim down sights</label>
+      <select id="set-aim-mode"><option value="hold">Hold right mouse</option><option value="toggle">Click right mouse to toggle</option></select></div>
+    <div class="setting-row"><label>Sprint</label>
+      <select id="set-sprint-mode"><option value="hold">Hold the sprint key</option><option value="toggle">Tap to toggle (stops when you stop)</option></select></div>
+    <div class="bind-head"><span>KEYS</span><span class="dim small">Click a key, then press the new one. Keys that clash swap places.</span></div>
+    <div id="bind-grid" class="bind-grid"></div>
+    <p class="bind-fixed dim small"><kbd>LEFT MOUSE</kbd> fire · <kbd>RIGHT MOUSE</kbd> aim · <kbd>WHEEL</kbd> switch guns · <kbd>ESC</kbd> pause · <kbd>F11</kbd> fullscreen<br>At the tables: <kbd>H</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>P</kbd> blackjack · <kbd>1–5</kbd> <kbd>SPACE</kbd> poker · <kbd>SPACE</kbd> <kbd>1–3</kbd> slots</p>
+    <button id="btn-binds-reset" class="btn small-btn">RESET KEYS TO DEFAULT</button>
+    </div>
     <button id="btn-settings-close" class="btn btn-big">DONE</button>
   </div>
 </div>
@@ -57315,7 +57490,7 @@ let master, comp, muffle, sfxGain, musicGain, ambientGain, reverbIn, reverb, noi
 let currentDest = null;   // when set, synth nodes route here (spatial panner)
 let warble = null;        // shared tape-wobble LFO (THE KING's croon)
 let dry = false;          // self-test: walk the score without making a sound
-const M = { intensity: 0.15, boss: false, health: 1, next: 0, beatNext: 0, eventT: 0, song: -1, bars: null, bar: 0, tick: 0, gap: 0 };
+const M = { intensity: 0.15, boss: false, health: 1, next: 0, beatNext: 0, eventT: 0, song: -1, bars: null, bar: 0, tick: 0, gap: 0, paused: false, musicV: 0.5 };
 
 const now = () => ctx.currentTime;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -58077,7 +58252,8 @@ export const Audio = {
   ready: false,
 
   init() {
-    if (this.ready) return;
+    // made before anyone clicked (an invite link), the context starts asleep: wake it
+    if (this.ready) { if (ctx?.state === 'suspended') ctx.resume().catch(() => {}); return; }
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       master = ctx.createGain();
@@ -58111,8 +58287,24 @@ export const Audio = {
     if (!ctx) return;
     master.gain.value = masterV;
     sfxGain.gain.value = sfxV;
-    musicGain.gain.value = musicV * 1.3;
+    M.musicV = musicV;
+    musicGain.gain.value = musicV * 1.3 * (M.paused ? 0.6 : 1);
     ambientGain.gain.value = musicV * 1.1;   // ambience rides the music slider
+  },
+
+  /** paused: the band keeps playing, as if through the door of the next room */
+  setPaused(on) {
+    if (!ctx || M.paused === on) return;
+    M.paused = on;
+    musicGain.gain.setTargetAtTime(M.musicV * 1.3 * (on ? 0.6 : 1), now(), 0.25);
+    this._muffle();
+  },
+
+  _muffle() {
+    const h = M.health;
+    let f = h < 0.3 ? 900 + h / 0.3 * 7000 : 20000;
+    if (M.paused) f = Math.min(f, 750);
+    muffle.frequency.setTargetAtTime(f, now(), M.paused ? 0.12 : 0.3);
   },
 
   setBossMode(on) { M.boss = on; },
@@ -58123,6 +58315,38 @@ export const Audio = {
   /** skip the band to its next tune (the debug panel) */
   nextSong() { if (ctx) { startSong(M.song + 1); M.gap = 0; M.next = now() + 0.1; } },
 
+  /** the band sees the run end: 'lose' gets the sad trombone (wah, wah, wah,
+      waaah), 'win' gets "shave and a haircut, two bits". The tune stops where
+      it is, and the next one starts after a breath. */
+  sting(kind) {
+    if (!ctx || ctx.state === 'suspended') return;
+    const t = now() + 0.08;
+    const td = 60 / SONGS[Math.max(0, M.song)].bpm / 3;
+    M.gap = Math.ceil(5 / td);                          // ~5 s of quiet, then the next tune
+    try {
+      if (kind === 'lose') {
+        [[58, 0], [57, 0.62], [56, 1.24]].forEach(([m, dt]) => HORNS.trombone(m, t + dt, 0.5, 1.15));
+        // the last one droops and wobbles
+        horn({ m: 55, t: t + 1.86, dur: 1.7, peak: 0.09, a: 0.05, lp: 1100, bp: 600, scoop: 40, vib: 5.5, vibCents: 55, sus: 0.85, r: 0.3,
+          osc: [['sawtooth', 1, 0], ['sawtooth', 0.4, 6]] });
+        bass(31, t + 1.86, 1.4, 0.7);
+        snare(t + 1.86, 0.4, true);
+      } else {
+        const q = 0.24;
+        const tune = [[72, 0, 1], [67, 1, 0.5], [67, 1.5, 0.5], [69, 2, 1], [67, 3, 1], [71, 5, 1], [72, 6, 2]];
+        for (const [m, at, len] of tune) {
+          HORNS.trumpet(m, t + at * q, len * q * 0.85, 1.15);
+          HORNS.clarinet({ 72: 64, 67: 64, 69: 65, 71: 67 }[m], t + at * q, len * q * 0.85, 0.6);   // thirds and sixths under it
+          snare(t + at * q, at >= 5 ? 1 : 0.55);
+        }
+        kick(t + 6 * q, 1.1);
+        crash(t + 6 * q, 1.2);
+        compChord(chordOf('C6'), t + 6 * q, 1.3, 0.02);
+        bass(36, t + 6 * q, 1.2, 1);
+      }
+    } catch { /* never crash on music */ }
+  },
+
   /** 0..1 danger level — drives tempo, heartbeat, tension strings */
   setIntensity(v) { M.intensity = Math.max(0, Math.min(1, v)); },
 
@@ -58130,8 +58354,7 @@ export const Audio = {
   setHealth(frac) {
     M.health = Math.max(0, Math.min(1, frac));
     if (!ctx) return;
-    const f = frac < 0.3 ? 900 + frac / 0.3 * 7000 : 20000;
-    muffle.frequency.setTargetAtTime(f, now(), 0.3);
+    this._muffle();
   },
 
   /** play a sound AT a world position; pans + attenuates with distance.
@@ -58195,6 +58418,9 @@ export const Audio = {
     const fn = SFX[name];
     if (fn) { try { fn(); } catch (e) { /* never crash on audio */ } }
   },
+
+  /** dev check: where the mix sits right now (paused, the muffle, the band's level) */
+  _mix() { return ctx ? { paused: M.paused, muffleHz: Math.round(muffle.frequency.value), music: +musicGain.gain.value.toFixed(3) } : null; },
 
   /** dev check: fire every sound once, report any that throw */
   _selfTest() {
@@ -63653,6 +63879,89 @@ function hash(s) {
 
 export { mix };
 </script>
+<script type="hotu/module" data-key="@hotu/src/coach.js">// coach.js — the first night's tips. A small card on the left of the screen
+// that shows each tip once, the first time it matters: how to move, what the
+// chips are for, how to buy, how to get out of trouble. It never blocks a shot
+// and never repeats itself. Settings → "Tips for new players" brings them back.
+
+import { Binds } from '@hotu/src/input.js';
+
+const KEY = 'hotu_tips_v1';
+const $ = (id) => document.getElementById(id);
+
+const k = (a) => `<kbd>${Binds.label(a)}</kbd>`;
+
+export const TIPS = {
+  move: () => ['THE FLOOR IS OPEN', `<kbd>${Binds.moveLabel()}</kbd> move · <kbd>MOUSE</kbd> aim · <kbd>LEFT CLICK</kbd> fire · <kbd>RIGHT CLICK</kbd> iron sights. ${k('dash')} dashes straight through a crowd.`],
+  chips: () => ['EVERY KILL PAYS', 'The dead pay out in chips, and dropped stacks fly to you. Kill fast to build a <b>streak</b>: the payout climbs with it.'],
+  buy: () => ['SPEND IT ON THE FLOOR', `Walk up to anything glowing and press ${k('use')}: cocktail perks, doors to new wings, the Big Six wheel.`],
+  hurt: () => ['GETTING CHEWED ON?', `${k('dash')} out of the crowd. The house comps you up to 50 HP after every round you clear.`],
+  reload: () => ['OUT OF ROUNDS', `${k('reload')} reloads. ${k('melee')} pistol-whips anything too close. ${k('lethal')} throws your lethal.`],
+  gear: () => ['YOUR GEAR', `${k('lethal')} throws a chip bomb (or whatever lethal you packed). ${k('tactical')} uses your tactical. Spend them well: mystery cards in the shop restock them.`],
+  guns: () => ['A NEW GUN', `${k('gun1')} ${k('gun2')} ${k('gun3')} or the <kbd>WHEEL</kbd> switch guns.`],
+  objective: () => ['A SIDE BET', 'Some rounds come with a side bet (top right). Make it for bonus chips. Missing it costs nothing.'],
+  coop: () => ['PLAYING WITH FRIENDS', `Hold ${k('scores')} to see everyone's ping, kills and chips. If a friend goes down, stand over them and hold ${k('use')}.`],
+};
+
+export class Coach {
+  constructor(game) {
+    this.game = game;
+    try { this.seen = new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); } catch { this.seen = new Set(); }
+    this.queue = [];
+    this.showing = null;
+    this.t = 0;
+  }
+
+  get on() { return this.game.settings.tips !== false; }
+
+  /** show a tip the first time it comes up (queued behind the one on screen) */
+  tip(id) {
+    if (!this.on || this.seen.has(id) || !TIPS[id]) return;
+    if (this.showing === id || this.queue.includes(id)) return;
+    if (id === 'move') this.queue.unshift(id);       // first things first
+    else this.queue.push(id);
+  }
+
+  /** forget every tip, so a new player on this machine sees them all */
+  reset() {
+    this.seen.clear();
+    this._save();
+  }
+
+  _save() { try { localStorage.setItem(KEY, JSON.stringify([...this.seen])); } catch { /* private mode */ } }
+
+  /** per frame (combat only; anywhere else the card waits) */
+  update(dt) {
+    const el = $('coach');
+    if (!el) return;
+    const g = this.game;
+    if (g.state !== 'COMBAT') { if (this.showing) this._hide(el, false); return; }
+    if (this.showing) {
+      this.t -= dt;
+      if (this.t <= 0) this._hide(el, true);
+      return;
+    }
+    if (this._gap > 0) { this._gap -= dt; return; }
+    const id = this.queue.shift();
+    if (!id) return;
+    if (this.seen.has(id)) return;
+    const [title, body] = TIPS[id]();
+    el.innerHTML = `<div class="coach-tag">TIP</div><div class="coach-title">${title}</div><div class="coach-body">${body}</div><i class="coach-timer"></i>`;
+    el.classList.add('show');
+    this.showing = id;
+    this.t = 7.5;
+    el.style.setProperty('--life', `${this.t}s`);
+  }
+
+  _hide(el, done) {
+    if (done) { this.seen.add(this.showing); this._save(); }
+    else this.queue.unshift(this.showing);           // interrupted: it comes back next fight
+    el.classList.remove('show');
+    this.showing = null;
+    this._gap = 1.2;
+  }
+}
+</script>
 <script type="hotu/module" data-key="@hotu/src/coatcheck.js">// coatcheck.js — THE COAT CHECK: create-a-class. Three claim tickets, each a
 // named class: a primary, a sidearm, a lethal (G), a tactical (T) and a vice.
 // The house specials (Magnum, Whale, Jubilee) can't be checked in — they only
@@ -66126,6 +66435,8 @@ import { Progress } from '@hotu/src/progress.js';
 import { ZONES } from '@hotu/src/arena.js';
 import { LETHALS, TACTICALS } from '@hotu/src/catalog.js';
 import { Seed } from '@hotu/src/rng.js';
+import { Binds } from '@hotu/src/input.js';
+import { Coach } from '@hotu/src/coach.js';
 import { makeEnvironment } from '@hotu/src/gfx/env.js';
 import { STYLE } from '@hotu/src/gfx/style.js';
 import { PostFX } from '@hotu/src/gfx/postfx.js';
@@ -66134,6 +66445,12 @@ import { skinFor, variantsOf, LOOKS } from '@hotu/src/chars/skins.js';
 import { bodyFor } from '@hotu/src/chars/rig.js';
 
 const $ = (id) => document.getElementById(id);
+
+// who the loading screen says it's dressing (the four players' looks are all "gamblers")
+const DRESSING = {
+  pitguard: 'the pit guards', jackpot: 'the jackpots', gambler: 'the gamblers', gambler2: 'the gamblers', gambler3: 'the gamblers',
+  gambler4: 'the gamblers', king: 'the King', pitboss: 'the Pit Boss', housedealer: 'the House Dealer',
+};
 
 // special round modifiers — rolled on non-boss rounds 3+ (40% chance)
 const SPECIAL_ROUNDS = [
@@ -66240,6 +66557,7 @@ export class Game {
     this.rewards = new Rewards(this);     // comps, streak tiers, the progressive, surprises
     this.wonder = new Wonder(this);       // LADY LUCK, built from three parts
     this.allIn = new AllIn(this);         // the house's pack-a-punch
+    this.coach = new Coach(this);         // the first night's tips
     this.loadout = null;
     this._interactables = null;
     this.interactTarget = null;
@@ -66493,7 +66811,7 @@ export class Game {
       this.interactTarget = { revive: rv };
       this.ui.interactPrompt({
         title: pct > 0 ? `REVIVING ${rv.name}…` : `REVIVE ${rv.name}`,
-        sub: pct > 0 ? 'Keep holding E' : `Hold E — they bleed out in ${Math.max(0, Math.ceil(rv.downT))}s`,
+        sub: pct > 0 ? `Keep holding ${Binds.label('use')}` : `Hold ${Binds.label('use')} — they bleed out in ${Math.max(0, Math.ceil(rv.downT))}s`,
         action: 'HOLD', icon: '✚', color: '#5dff9a', progress: pct,
       });
       return;
@@ -66514,6 +66832,7 @@ export class Game {
     }
     this.interactTarget = best;
     this.ui.interactPrompt(best ? best.lab : null);
+    if (best && best.lab.cost != null) this.coach.tip('buy');
   }
 
   tryInteract() {
@@ -66588,7 +66907,7 @@ export class Game {
     const frame = () => new Promise((r) => setTimeout(r, 0));
     for (let i = 0; i < jobs.length; i++) {
       skinFor(jobs[i][0], jobs[i][1]);
-      onProgress((i + 1) / (jobs.length + 2), `Dressing the ${jobs[i][0] === 'housedealer' ? 'house dealer' : jobs[i][0] === 'pitboss' ? 'pit boss' : jobs[i][0]}s…`);
+      onProgress((i + 1) / (jobs.length + 2), `Dressing ${DRESSING[jobs[i][0]] || `the ${jobs[i][0]}s`}…`);
       await frame();
     }
     this.arena.addShow();          // the dead chorus line on the lounge stage
@@ -66698,10 +67017,12 @@ export class Game {
     this.setState('PAUSED');
     $('pause-seed').textContent = Seed.text;
     if (this.net.active) this.ui.prompt('Co-op keeps playing while you\'re paused!', 2500);
+    else Audio.setPaused(true);                // the band, through the door of the next room
     this.ui.show('pause-menu');
   }
 
   resume() {
+    Audio.setPaused(false);
     this.ui.hide('pause-menu');
     this.setState(this._stateBeforePause || 'COMBAT');
   }
@@ -66754,6 +67075,7 @@ export class Game {
 
   onKill(zombie) {
     this.stats.kills++;
+    this.coach.tip('chips');
     this.combo++;
     if (zombie.kind === 'jackpot') {
       this.ui.banner('JACKPOT CASHED OUT!', 'gold', 2000);
@@ -67078,6 +67400,7 @@ export class Game {
   }
 
   cashOut() {
+    Audio.sting('win');
     this.ui.showSummary(true, `You cashed out after round ${this.round} and walked into the sunrise.`);
   }
 
@@ -67119,6 +67442,7 @@ export class Game {
     Audio.setBossMode(false);
     this.arena.setRedAlert(false);
     const won = this.beatHouse;   // dying deep in endless still counts as a win
+    Audio.sting(won ? 'win' : 'lose');
     setTimeout(() => this.ui.irisSwap(() => this.ui.showSummary(won,
       won ? `The house got you on round ${this.round} — but you beat it first.`
           : `Taken down by ${cause} on round ${this.round}.`), 800), 700);
@@ -67127,7 +67451,16 @@ export class Game {
   // ------------------------------- menus ------------------------------------
   _wireMenus() {
     // ENTER THE CASINO goes through the Coat Check first (pick / build a class)
-    $('btn-start').onclick = () => { Audio.init(); this.coatCheck.open(); };
+    // the very first night: the house explains itself on the way in
+    $('btn-start').onclick = () => {
+      Audio.init();
+      // (anyone with runs on the books already knows the house)
+      if (this.settings.seenHowTo || this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
+      this.ui.hide('main-menu');
+      this.ui.howTo(() => this.coatCheck.open(), 'GOT IT — TO THE COAT CHECK ▸');
+    };
+    $('btn-howto').onclick = () => { this.ui.hide('main-menu'); this.ui.howTo(() => this.ui.show('main-menu'), '◂ BACK TO THE MENU'); };
+    $('btn-howto-pause').onclick = () => { this.ui.hide('pause-menu'); this.ui.howTo(() => { if (this.state === 'PAUSED') this.ui.show('pause-menu'); }, '◂ BACK'); };
     $('btn-continue').onclick = () => { Audio.init(); this.continueRun(); };
     $('btn-seed').onclick = () => { Audio.init(); this.coatCheck.open(true); };
     $('btn-replay-seed').onclick = () => this.newRun(null, Seed.text);
@@ -67182,6 +67515,7 @@ export class Game {
     $('btn-markers-close').onclick = () => { this.ui.hide('markers-panel'); this._refreshMenu(); this.ui.show('main-menu'); };
     $('btn-settings-pause').onclick = () => openSettings('pause-menu');
     $('btn-settings-close').onclick = () => {
+      this.ui._cancelBind?.();
       this.ui.hide('settings-panel');
       this.ui.show(this._settingsReturn || 'main-menu');
     };
@@ -67197,6 +67531,7 @@ export class Game {
     }
 
     this.net.update(rawDt);
+    this.coach.update(rawDt);
     let state = this.state;
     this.rewards.update(rawDt, this.state === 'COMBAT' || (this.state === 'PAUSED' && this.net.active && this._stateBeforePause === 'COMBAT'));
     if (state === 'PAUSED' && this.net.active && this.net.inRun
@@ -67219,6 +67554,10 @@ export class Game {
         if (this._countdownT <= 0) {
           if (this.state === 'PAUSED') this._stateBeforePause = 'COMBAT';
           else this.setState('COMBAT');
+          this.coach.tip('move');
+          if (this.round >= 2) this.coach.tip('gear');
+          if (this.net.active) this.coach.tip('coop');
+          if (this.objective) this.coach.tip('objective');
         }
         break;
       }
@@ -67305,6 +67644,8 @@ export class Game {
           Audio.setIntensity(this.state === 'MENU' ? 0.1 : 0.15);
           Audio.setHealth(1);
         }
+        // paused alone: the room goes muffled (co-op keeps playing, so it stays clear)
+        Audio.setPaused(this.state === 'PAUSED' && !this.net.active);
       }
     }
     // low health: color drains, the edges pulse red
@@ -69190,7 +69531,7 @@ export function noiseCanvas(size = 256, scale = 4, octaves = 4, seed = 7, contra
     amp *= 0.5;
   }
   const cv = makeCanvas(size);
-  const ctx = cv.getContext('2d');
+  const ctx = cv.getContext('2d', { willReadFrequently: true });   // tintedNoise reads it back
   const img = ctx.createImageData(size, size);
   for (let i = 0; i < out.length; i++) {
     let v = out[i] / total;
@@ -71879,6 +72220,129 @@ export class GunAnimator {
 
 function addv(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
 </script>
+<script type="hotu/module" data-key="@hotu/src/input.js">// input.js — the keys. Every action has a default key, picked by its place on
+// the keyboard (event.code), so an AZERTY player gets the same hand shape as a
+// QWERTY one. Every action can be rebound in Settings → Controls, and every
+// on-screen key hint reads from here, labelled in the player's own layout.
+//
+// Mouse buttons past the first two (wheel click, the side buttons) can be bound
+// too: they arrive as the codes Mouse1, Mouse3 and Mouse4.
+
+const KEY = 'hotu_binds_v1';
+
+export const ACTIONS = [
+  { id: 'forward', label: 'Move forward', def: ['KeyW'] },
+  { id: 'back', label: 'Move back', def: ['KeyS'] },
+  { id: 'left', label: 'Strafe left', def: ['KeyA'] },
+  { id: 'right', label: 'Strafe right', def: ['KeyD'] },
+  { id: 'sprint', label: 'Sprint', def: ['ShiftLeft', 'ShiftRight'] },
+  { id: 'jump', label: 'Jump', def: ['Space'] },
+  { id: 'dash', label: 'Dash', def: ['KeyQ'] },
+  { id: 'use', label: 'Use · buy · revive', def: ['KeyE'] },
+  { id: 'reload', label: 'Reload', def: ['KeyR'] },
+  { id: 'melee', label: 'Pistol-whip', def: ['KeyF'] },
+  { id: 'lethal', label: 'Throw lethal', def: ['KeyG'] },
+  { id: 'tactical', label: 'Use tactical', def: ['KeyT'] },
+  { id: 'gun1', label: 'First gun', def: ['Digit1'] },
+  { id: 'gun2', label: 'Second gun', def: ['Digit2'] },
+  { id: 'gun3', label: 'Third gun', def: ['Digit3'] },
+  { id: 'scores', label: 'Scoreboard (hold)', def: ['Tab'] },
+];
+
+/** keys the game keeps for itself: pause, fullscreen, the debug panel */
+export const RESERVED = new Set(['Escape', 'F3', 'F11', 'Mouse0', 'Mouse2']);
+
+const NAMES = {
+  Space: 'SPACE', ShiftLeft: 'SHIFT', ShiftRight: 'R-SHIFT', ControlLeft: 'CTRL', ControlRight: 'R-CTRL',
+  AltLeft: 'ALT', AltRight: 'ALT GR', MetaLeft: 'WIN', MetaRight: 'WIN', Tab: 'TAB', CapsLock: 'CAPS',
+  Enter: 'ENTER', Backspace: 'BKSP', Backquote: '`', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  Mouse1: 'MOUSE 3', Mouse3: 'MOUSE 4', Mouse4: 'MOUSE 5', Insert: 'INS', Delete: 'DEL', PageUp: 'PG UP', PageDown: 'PG DN',
+};
+
+let layout = null;   // the player's keyboard layout, where the browser shares it
+try {
+  navigator.keyboard?.getLayoutMap?.().then((m) => { layout = m; globalThis.dispatchEvent?.(new Event('hotu-binds')); }).catch(() => {});
+} catch { /* not offered */ }
+
+const defaults = () => Object.fromEntries(ACTIONS.map((a) => [a.id, [...a.def]]));
+
+export const Binds = {
+  map: defaults(),
+
+  load() {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* defaults */ }
+    this.map = defaults();
+    for (const a of ACTIONS) {
+      const v = saved[a.id];
+      if (Array.isArray(v) && v.length && v.every((c) => typeof c === 'string' && !RESERVED.has(c))) this.map[a.id] = v.slice(0, 2);
+    }
+    return this;
+  },
+
+  save() {
+    try { localStorage.setItem(KEY, JSON.stringify(this.map)); } catch { /* private mode */ }
+    globalThis.dispatchEvent?.(new Event('hotu-binds'));
+  },
+
+  reset() { this.map = defaults(); this.save(); },
+
+  /** bind an action to a key. If another action had that key, the two swap,
+      so nothing is ever left without a key. Returns the action it swapped with. */
+  set(action, code) {
+    if (RESERVED.has(code) || !this.map[action]) return null;
+    const old = this.map[action][0];
+    let swapped = null;
+    for (const a of ACTIONS) {
+      if (a.id === action) continue;
+      const list = this.map[a.id];
+      if (!list.includes(code)) continue;
+      const rest = list.filter((c) => c !== code);
+      this.map[a.id] = rest.length ? rest : [old];
+      swapped = a.id;
+    }
+    this.map[action] = [code];
+    this.save();
+    return swapped;
+  },
+
+  /** the action a key (or extra mouse button) is bound to, if any */
+  actionFor(code) {
+    for (const a of ACTIONS) if (this.map[a.id].includes(code)) return a.id;
+    return null;
+  },
+
+  /** is the action held right now? keys: the player's held-key table */
+  held(keys, action) {
+    const list = this.map[action];
+    for (let i = 0; i < list.length; i++) if (keys[list[i]]) return true;
+    return false;
+  },
+
+  /** how a key reads on screen ("W", "SHIFT", "MOUSE 4"…), in the player's layout */
+  keyName(code) {
+    if (!code) return '—';
+    if (NAMES[code]) return NAMES[code];
+    const local = layout?.get?.(code);
+    if (local && local.trim()) return local.toUpperCase();
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    if (code.startsWith('Numpad')) return `NUM ${code.slice(6)}`;
+    return code.toUpperCase();
+  },
+
+  /** the primary key of an action, as it reads on screen */
+  label(action) { return this.keyName(this.map[action]?.[0]); },
+
+  /** WASD, or whatever the four movement keys are now */
+  moveLabel() {
+    const k = ['forward', 'left', 'back', 'right'].map((a) => this.label(a));
+    return k.join(k.every((s) => s.length === 1) ? '' : ' ');
+  },
+};
+
+Binds.load();
+</script>
 <script type="hotu/module" data-key="@hotu/src/main.js">// main.js — bootstrap + input wiring. Everything else lives in the systems.
 
 import { STYLE } from '@hotu/src/gfx/style.js';
@@ -71887,11 +72351,14 @@ import { Game } from '@hotu/src/game.js';
 document.body.dataset.art = STYLE.name;   // lets the CSS dress the HUD for the era
 import { initDebug } from '@hotu/src/debug.js';
 import { Audio } from '@hotu/src/audio.js';
+import { Binds } from '@hotu/src/input.js';
 
 const $ = (id) => document.getElementById(id);
+const loadLog = window.HOTU_loadLog = [];   // [ms since page start, step] — how long loading takes, for tuning
 const loadStatus = (k, msg) => {
   $('load-bar-fill').style.width = `${Math.round(k * 100)}%`;
   if (msg) $('load-status').textContent = msg;
+  loadLog.push([Math.round(performance.now()), msg || '']);
 };
 
 // running inside the desktop exe (WebView2)? then the host window does fullscreen + quit
@@ -71908,6 +72375,11 @@ loadStatus(0.05, 'Building the casino floor…');
 // let the loading screen paint before the heavy lifting starts
 await new Promise((r) => setTimeout(r, 30));
 
+if (!window.HOTU_glOk) {
+  window.HOTU_fail?.('THIS BROWSER CAN\'T DRAW THE CASINO',
+    'The game needs WebGL 2 (3D graphics in the browser). Turn on "hardware acceleration" in your browser settings, update your graphics driver, or open the game in an up-to-date Chrome, Edge or Firefox.');
+  throw new Error('WebGL 2 unavailable');
+}
 const game = new Game();
 const debugPanel = initDebug(game);
 for (const id of ['btn-debug-pause', 'btn-debug-settings']) document.getElementById(id).onclick = () => debugPanel.toggle();
@@ -71924,13 +72396,44 @@ $('btn-coop-host').onclick = () => { Audio.init(); game.net.setName($('coop-name
 $('btn-coop-join').onclick = () => { Audio.init(); game.net.setName($('coop-name').value); game.net.join($('coop-join-code').value); };
 $('coop-join-code').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btn-coop-join').click(); });
 $('coop-join-code').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase(); });
-$('btn-coop-copy').onclick = () => { navigator.clipboard?.writeText(game.net.code || '').then(() => { $('btn-coop-copy').textContent = 'COPIED'; setTimeout(() => { $('btn-coop-copy').textContent = 'COPY'; }, 1500); }).catch(() => {}); };
+/** copy text, with the old select-and-copy for browsers that refuse the clipboard API */
+const copyText = async (text) => {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* fall back */ }
+  try {
+    const t = document.createElement('textarea');
+    t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select();
+    const ok = document.execCommand('copy');
+    t.remove();
+    return ok;
+  } catch { return false; }
+};
+const copyButton = (id, text, label) => {
+  copyText(text).then((ok) => {
+    $(id).textContent = ok ? 'COPIED ✓' : 'COPY FAILED: SELECT IT BY HAND';
+    setTimeout(() => { $(id).textContent = label; }, 1600);
+  });
+};
+$('btn-coop-copy').onclick = () => copyButton('btn-coop-copy', game.net.code || '', 'COPY CODE');
+$('btn-coop-invite').onclick = () => copyButton('btn-coop-invite', game.net.inviteLink() || '', '🔗 COPY INVITE LINK');
 $('btn-coop-start').onclick = () => game.net.startRun();
 $('btn-coop-back').onclick = () => { game.net.leave(true); game.ui.hide('coop-panel'); game.ui.show('main-menu'); };
 
 const canvas = game.renderer.domElement;
 await game.preload(loadStatus);
 $('main-menu').classList.remove('hidden');
+loadLog.push([Math.round(performance.now()), 'menu']);
+// a phone or tablet with no mouse: say so up front
+if (!matchMedia('(any-pointer: fine)').matches) $('touch-note').classList.remove('hidden');
+// opened from an invite link (?join=CODE): straight to the co-op table
+const invite = new URLSearchParams(location.search).get('join');
+if (invite) {
+  history.replaceState(null, '', location.pathname);
+  $('btn-coop').click();
+  $('coop-join-code').value = invite.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  game.net.setName($('coop-name').value);
+  game.net.join($('coop-join-code').value);
+}
 $('loading-screen').classList.add('fade');
 setTimeout(() => $('loading-screen').remove(), 700);
 
@@ -71939,7 +72442,8 @@ canvas.addEventListener('click', () => {
   Audio.init(); // first user gesture unlocks WebAudio
   if (game.state === 'COMBAT' || game.state === 'COUNTDOWN') game.ui.requestPointer();
 });
-document.addEventListener('pointerdown', () => Audio.init(), { once: true });
+document.addEventListener('pointerdown', () => Audio.init());
+document.addEventListener('keydown', () => Audio.init());
 
 document.addEventListener('pointerlockchange', () => {
   const locked = document.pointerLockElement === canvas;
@@ -71954,54 +72458,91 @@ document.addEventListener('mousemove', (e) => {
   }
 });
 
+// ---------- actions (see input.js: every key here can be rebound) ----------
+const locked = () => document.pointerLockElement === canvas;
+/** a bound key went down (not a repeat) */
+function pressAction(act) {
+  if (!act) return;
+  // down on the carpet: you can look and shoot, nothing else
+  if (!game.player.alive && act !== 'scores') return;
+  switch (act) {
+    case 'reload': game.weapons.startReload(); break;
+    case 'gun1': game.weapons.switchSlot(0); break;
+    case 'gun2': game.weapons.switchSlot(1); break;
+    case 'gun3': game.weapons.switchSlot(2); break;
+    case 'dash': game.player.tryDash(); break;
+    case 'lethal': game.equipment.throwLethal(); break;
+    case 'tactical': game.equipment.useTactical(); break;
+    case 'use': game.tryInteract(); break;
+    case 'melee': game.weapons.tryMelee(); break;
+    case 'sprint': if (game.settings.sprintToggle) game.player.sprintLatch = !game.player.sprintLatch; break;
+    default: break;
+  }
+}
+
 // ---------- mouse buttons ----------
+// left fires and right aims; the wheel click and side buttons can be bound
 document.addEventListener('mousedown', (e) => {
-  if (document.pointerLockElement !== canvas) return;
+  if (!locked()) return;
   if (e.button === 0) {
     game.weapons.triggerHeld = true;
     game.weapons.tryFire();
   } else if (e.button === 2) {
-    game.player.aiming = true;
+    game.player.aiming = game.settings.aimToggle ? !game.player.aiming : true;
+  } else {
+    e.preventDefault();                     // side buttons would otherwise go "back" a page
+    const code = `Mouse${e.button}`;
+    game.player.keys[code] = true;
+    const act = Binds.actionFor(code);
+    if (act === 'scores') game.ui.scoreboard(true);
+    else pressAction(act);
   }
 });
 document.addEventListener('mouseup', (e) => {
   if (e.button === 0) game.weapons.triggerHeld = false;
-  if (e.button === 2) game.player.aiming = false;
+  else if (e.button === 2) { if (!game.settings.aimToggle) game.player.aiming = false; }
+  else {
+    if (locked()) e.preventDefault();
+    const code = `Mouse${e.button}`;
+    game.player.keys[code] = false;
+    if (Binds.actionFor(code) === 'scores') game.ui.scoreboard(false);
+  }
 });
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 // the mouse wheel flips between your guns
 document.addEventListener('wheel', (e) => {
-  if (document.pointerLockElement !== canvas) return;
+  if (!locked()) return;
   game.weapons.cycle(e.deltaY > 0 ? 1 : -1);
 }, { passive: true });
 
 // ---------- keyboard ----------
+// Esc backs out of the menus (pausing mid-fight is the pointer lock's job)
+const ESC_BACK = [
+  ['settings-panel', 'btn-settings-close'], ['howto-panel', 'btn-howto-go'], ['markers-panel', 'btn-markers-close'],
+  ['vault-panel', 'btn-vault-close'], ['coatcheck-panel', 'btn-coat-back'],
+];
 document.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' && !locked()) {
+    if (e.target?.blur && e.target !== document.body) e.target.blur();
+    for (const [panel, btn] of ESC_BACK) {
+      if (!$(panel).classList.contains('hidden')) { e.preventDefault(); $(btn).click(); return; }
+    }
+  }
   // typing a class name at the Coat Check shouldn't fire off grenades
-  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-  // hold TAB: the scoreboard
-  if (e.code === 'Tab') { e.preventDefault(); game.ui.scoreboard(true); return; }
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT')) return;
+  if (e.code === 'F3') { e.preventDefault(); debugPanel.toggle(); return; }
+  if (e.code === 'F11') { e.preventDefault(); window.HOTU_toggleFullscreen(); return; }
+  const act = Binds.actionFor(e.code);
+  // hold the scoreboard key (TAB): everyone at the table
+  if (act === 'scores') { e.preventDefault(); game.ui.scoreboard(true); return; }
   // at the tables: hit / stand / double / split, holds, spins and the slot arm
   if (!e.repeat && game.casino.key(e.code)) { e.preventDefault(); return; }
+  if (act && locked()) e.preventDefault();   // no page scrolling on SPACE mid-fight
   game.player.keys[e.code] = true;
-  if (e.repeat) return;
-  // down on the carpet: you can look and shoot, nothing else
-  if (!game.player.alive && ['KeyQ', 'KeyG', 'KeyT', 'KeyE', 'KeyF', 'KeyR', 'Digit1', 'Digit2', 'Digit3', 'Space'].includes(e.code)) return;
-  if (e.code === 'KeyR') game.weapons.startReload();
-  if (e.code === 'Digit1') game.weapons.switchSlot(0);
-  if (e.code === 'Digit2') game.weapons.switchSlot(1);
-  if (e.code === 'Digit3') game.weapons.switchSlot(2);
-  if (e.code === 'KeyQ') game.player.tryDash();
-  if (e.code === 'KeyG') game.equipment.throwLethal();
-  if (e.code === 'KeyT') game.equipment.useTactical();
-  if (e.code === 'KeyE') game.tryInteract();
-  if (e.code === 'KeyF') game.weapons.tryMelee();
-  if (e.code === 'F3') { e.preventDefault(); debugPanel.toggle(); }
-  if (e.code === 'F11') { e.preventDefault(); window.HOTU_toggleFullscreen(); }
-  if (e.code === 'Space' && document.pointerLockElement === canvas) e.preventDefault();
+  if (!e.repeat) pressAction(act);
 });
 document.addEventListener('keyup', (e) => {
-  if (e.code === 'Tab') game.ui.scoreboard(false);
+  if (Binds.actionFor(e.code) === 'scores') game.ui.scoreboard(false);
   game.player.keys[e.code] = false;
 });
 
@@ -72011,6 +72552,7 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur', () => {
   for (const k of Object.keys(game.player.keys)) game.player.keys[k] = false;
+  game.player.sprintLatch = false;
   game.ui.scoreboard(false);
   game.weapons.triggerHeld = false;
 });
@@ -72256,6 +72798,7 @@ import { buildWorldGun } from '@hotu/src/gfx/viewmodels.js';
 import { GUNFX } from '@hotu/src/weapons.js';
 import { STYLE } from '@hotu/src/gfx/style.js';
 import { randomSeed } from '@hotu/src/rng.js';
+import { Binds } from '@hotu/src/input.js';
 
 const PROTO = 2;
 const PREFIX = 'hotu-coop-';
@@ -72650,6 +73193,17 @@ export class Net {
     return new window.Peer(id, { debug: 0 });
   }
 
+  /** a link that opens the game and sits a friend straight down at this table.
+      Only where the game is served from a web address a friend can open too */
+  inviteLink() {
+    if (!this.code || !/^https?:$/.test(location.protocol) || window.chrome?.webview) return null;
+    const u = new URL(location.href);
+    u.search = '';
+    u.hash = '';
+    u.searchParams.set('join', this.code);
+    return u.toString();
+  }
+
   /** the four seats in the lobby: who's sitting where */
   renderSeats() {
     const el = $('coop-seats');
@@ -72681,7 +73235,13 @@ export class Net {
     peer.on('open', () => {
       $('coop-code').textContent = this.code;
       $('coop-code-wrap').classList.remove('hidden');
-      this._status(`Send your friends this code — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`);
+      const link = this.inviteLink();
+      $('btn-coop-invite').classList.toggle('hidden', !link);
+      $('coop-invite').classList.toggle('hidden', !link);
+      $('coop-invite').textContent = link || '';
+      this._status(link
+        ? `Send your friends the invite link (or just the code) — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`
+        : `Send your friends this code — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`);
       this.renderSeats();
     });
     peer.on('connection', (conn) => {
@@ -72705,7 +73265,11 @@ export class Net {
       if (seat >= MAX_PLAYERS) { refuse('full'); return; }
       conn._seat = seat;
       this.links.set(seat, conn);
-      this.players.set(seat, new RemotePlayer(this.game, seat, cleanName(m.name) || `PLAYER ${seat + 1}`));
+      // two windows of one browser share a saved name: keep the table's names apart
+      let nm = cleanName(m.name) || `PLAYER ${seat + 1}`;
+      const taken = new Set([this.name, ...this.remotes().map((r) => r.name)]);
+      if (taken.has(nm)) nm = `${nm.slice(0, 13)} ${seat + 1}`;
+      this.players.set(seat, new RemotePlayer(this.game, seat, nm));
       conn.send({ t: 'welcome', seat });
       this._rosterOut();
       this._status(`${this.players.get(seat).name} sat down at seat ${seat + 1}. Deal when everyone's in.`, 'good');
@@ -72761,8 +73325,14 @@ export class Net {
       conn.on('data', (m) => { this._hostLast = performance.now(); try { this._onMsg(m, 0); } catch (err) { console.error('[net]', err); } });
       conn.on('close', () => this._hostGone());
       conn.on('error', () => this._hostGone());
-      setTimeout(() => { if (!this.welcomed && this.role === 'guest') this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
+      setTimeout(() => { if (!this.welcomed && this.role === 'guest' && this.peer === peer) this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
     });
+    // nobody answered: stand back up so they can try again
+    setTimeout(() => {
+      if (this.welcomed || this.role !== 'guest' || this.peer !== peer) return;
+      this.leave(true);
+      this._status(`Couldn't reach table ${code}. Check the code, make sure the host is still on the co-op screen, and try again. Very strict networks (some offices and schools) block co-op.`, 'bad');
+    }, 25000);
     peer.on('error', (e) => this._peerError(e));
   }
 
@@ -72976,7 +73546,7 @@ export class Net {
     this.downCause = cause;
     g.weapons.reloading = false;
     Audio.play('boss_phase');
-    g.ui.banner("YOU'RE DOWN — A TEAMMATE CAN HOLD E ON YOU TO DEAL YOU BACK IN", 'red', 3200);
+    g.ui.banner(`YOU'RE DOWN — A TEAMMATE CAN HOLD ${Binds.label('use')} ON YOU TO DEAL YOU BACK IN`, 'red', 3200);
     this._sendState();
   }
 
@@ -73451,7 +74021,7 @@ export class Net {
       if (nm.textContent !== r.name) nm.textContent = r.name;
       row.querySelector('.fill').style.width = `${Math.max(0, Math.min(100, (r.hp / r.maxHp) * 100))}%`;
       const st = row.querySelector('.coop-state');
-      const txt = !r.seen ? 'connecting…' : r.bled ? 'BLED OUT — back next round' : r.down ? `DOWN — ${r.downT}s — hold E on them!` : `${Math.round(r.hp)} HP`;
+      const txt = !r.seen ? 'connecting…' : r.bled ? 'BLED OUT — back next round' : r.down ? `DOWN — ${r.downT}s — hold ${Binds.label('use')} on them!` : `${Math.round(r.hp)} HP`;
       if (st.textContent !== txt) st.textContent = txt;
       row.classList.toggle('down', r.down || r.bled);
     }
@@ -73463,7 +74033,7 @@ export class Net {
       const b = $('coop-down-t');
       if (b.textContent !== txt) b.textContent = txt;
       $('coop-down-sub').textContent = p.bledOut ? 'The rest of the table has to clear the round'
-        : 'Hang on — a teammate can stand over you and hold E to deal you back in';
+        : `Hang on — a teammate can stand over you and hold ${Binds.label('use')} to deal you back in`;
     }
   }
 }
@@ -73912,6 +74482,7 @@ export class Pickups {
 import * as THREE from 'three';
 import { CONFIG, clamp } from '@hotu/src/config.js';
 import { Audio } from '@hotu/src/audio.js';
+import { Binds } from '@hotu/src/input.js';
 
 const P = CONFIG.player;
 
@@ -73954,6 +74525,7 @@ export class Player {
     this.grenades = CONFIG.grenade.start;
     this.dashCd = 0; this.dashT = 0;
     this.aiming = false;
+    this.sprintLatch = false;
     this.hurtKick = { x: 0, y: 0 };
     this.roll = 0;
   }
@@ -73963,8 +74535,16 @@ export class Player {
     this._lookDX = (this._lookDX || 0) + dx;     // feeds the viewmodel's look sway
     this._lookDY = (this._lookDY || 0) + dy;
     this.yaw -= dx * s;
-    this.pitch = clamp(this.pitch - dy * s, -1.45, 1.45);
+    this.pitch = clamp(this.pitch - dy * s * (this.game.settings.invertY ? -1 : 1), -1.45, 1.45);
   }
+
+  /** is a bound action's key held? (see input.js) */
+  held(action) { return Binds.held(this.keys, action); }
+
+  /** moving at sprint: the key held, or latched on in toggle mode */
+  get sprinting() { return this.game.settings.sprintToggle ? !!this.sprintLatch : this.held('sprint'); }
+  /** wanting to move at all */
+  get moving() { return this.held('forward') || this.held('back') || this.held('left') || this.held('right'); }
 
   /** co-op: on your feet (not bleeding out, not bled out) */
   get alive() { return !this.downed && !this.bledOut; }
@@ -73983,10 +74563,10 @@ export class Player {
   tryDash() {
     if (this.dashCd > 0 || this.dashT > 0) return;
     const dir = new THREE.Vector3();
-    if (this.keys['KeyW']) dir.add(this.forwardFlat());
-    if (this.keys['KeyS']) dir.sub(this.forwardFlat());
-    if (this.keys['KeyD']) dir.add(this.rightFlat());
-    if (this.keys['KeyA']) dir.sub(this.rightFlat());
+    if (this.held('forward')) dir.add(this.forwardFlat());
+    if (this.held('back')) dir.sub(this.forwardFlat());
+    if (this.held('right')) dir.add(this.rightFlat());
+    if (this.held('left')) dir.sub(this.rightFlat());
     if (dir.lengthSq() < 0.01) dir.copy(this.forwardFlat());
     dir.normalize();
     this.dashDir.copy(dir);
@@ -74011,14 +74591,17 @@ export class Player {
 
     // horizontal intent
     const dir = new THREE.Vector3();
-    if (this.keys['KeyW']) dir.add(this.forwardFlat());
-    if (this.keys['KeyS']) dir.sub(this.forwardFlat());
-    if (this.keys['KeyD']) dir.add(this.rightFlat());
-    if (this.keys['KeyA']) dir.sub(this.rightFlat());
+    if (this.held('forward')) dir.add(this.forwardFlat());
+    if (this.held('back')) dir.sub(this.forwardFlat());
+    if (this.held('right')) dir.add(this.rightFlat());
+    if (this.held('left')) dir.sub(this.rightFlat());
     if (dir.lengthSq() > 0) dir.normalize();
 
     let speed = P.speed;
-    if (this.keys['ShiftLeft'] || this.keys['ShiftRight']) speed *= P.sprintMult;
+    // toggle sprint lets go once you've stood still a moment (a tap before moving still counts)
+    this._stillT = dir.lengthSq() === 0 ? (this._stillT || 0) + dt : 0;
+    if (this._stillT > 0.35) this.sprintLatch = false;
+    if (this.sprinting) speed *= P.sprintMult;
     if (this.aiming) speed *= 0.55;
     speed *= g.casino.roundMods.playerSlowMult || 1;
     speed *= g.playerMods.speed * (g.perkFx?.speed || 1);
@@ -74039,7 +74622,7 @@ export class Player {
     this.pos.add(move);
 
     // jump + gravity
-    if (this.keys['Space'] && this.onGround) {
+    if (this.held('jump') && this.onGround) {
       this.vel.y = P.jumpVel;
       this.onGround = false;
     }
@@ -74076,7 +74659,7 @@ export class Player {
     const bob = bobbing ? Math.sin(this.bobT * 2) * 0.026 * amp : 0;
     const sideBob = bobbing ? Math.sin(this.bobT) * 0.022 * amp : 0;
     const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) : 0;
-    const strafe = (this.keys['KeyD'] ? 1 : 0) - (this.keys['KeyA'] ? 1 : 0);
+    const strafe = (this.held('right') ? 1 : 0) - (this.held('left') ? 1 : 0);
     this.roll = (this.roll || 0) + ((-strafe * 0.022 + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
     this.hurtKick = this.hurtKick || { x: 0, y: 0 };
     this.hurtKick.x *= Math.exp(-dt * 9); this.hurtKick.y *= Math.exp(-dt * 9);
@@ -74114,6 +74697,7 @@ export class Player {
     }
     this.hp -= amount;
     if (g.rewards) g.rewards.hitThisRound = true;
+    if (this.hp < this.maxHp * 0.45) g.coach?.tip('hurt');
     // Loaded Dice: getting hit shakes chips loose
     if (g.playerMods.hitChipLoss > 0 && g.chips > 0) {
       g.chips = Math.max(0, g.chips - g.playerMods.hitChipLoss);
@@ -75777,6 +76361,7 @@ const CARTOON_TITLES = [
 import { LOYALTY, MARKERS, CHIPS } from '@hotu/src/progress.js';
 import { Seed } from '@hotu/src/rng.js';
 import { SEAT_COLOR } from '@hotu/src/net.js';
+import { ACTIONS, Binds, RESERVED } from '@hotu/src/input.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -75830,7 +76415,7 @@ export class UI {
   show(id) { $(id).classList.remove('hidden'); }
   hide(id) { $(id).classList.add('hidden'); }
   hideAllPanels() {
-    for (const id of ['main-menu', 'pause-menu', 'settings-panel', 'boss-intro', 'coatcheck-panel', 'coop-panel', 'markers-panel',
+    for (const id of ['main-menu', 'pause-menu', 'settings-panel', 'boss-intro', 'coatcheck-panel', 'coop-panel', 'markers-panel', 'howto-panel',
       'intermission', 'blackjack-panel',
       'roulette-panel', 'slots-panel', 'poker-panel', 'upgrade-panel', 'summary-panel', 'vault-panel']) {
       this.hide(id);
@@ -75879,8 +76464,8 @@ export class UI {
 
     // lethal (G) + tactical (T) + dash + combo
     const L = LETHALS[p.lethalId], T = TACTICALS[p.tacticalId];
-    const gearHtml = `<span class="gear" style="--c:${L?.color || '#e0303c'}" title="${L?.name}"><kbd>G</kbd>${L?.icon}<b>${p.grenades}</b></span>`
-      + (T ? `<span class="gear" style="--c:${T.color}" title="${T.name}"><kbd>T</kbd>${T.icon}<b>${p.tacticals}</b></span>` : '');
+    const gearHtml = `<span class="gear" style="--c:${L?.color || '#e0303c'}" title="${L?.name}"><kbd>${Binds.label('lethal')}</kbd>${L?.icon}<b>${p.grenades}</b></span>`
+      + (T ? `<span class="gear" style="--c:${T.color}" title="${T.name}"><kbd>${Binds.label('tactical')}</kbd>${T.icon}<b>${p.tacticals}</b></span>` : '');
     if (gearHtml !== this._gearHtml) { $('gear-hud').innerHTML = gearHtml; this._gearHtml = gearHtml; }
     const dashPct = clamp(1 - p.dashCd / p.dashCooldown, 0, 1);
     $('dash-fill').style.width = `${dashPct * 100}%`;
@@ -76125,7 +76710,7 @@ export class UI {
     if (key === this._ip) return;
     this._ip = key;
     const cost = lab.cost != null ? `<span class="ip-cost${can ? '' : ' poor'}"><i class="chip-icon"></i>${lab.cost}</span>` : '';
-    const act = lab.cost != null || lab.action ? `<kbd>E</kbd>` : '';
+    const act = lab.cost != null || lab.action ? `<kbd>${Binds.label('use')}</kbd>` : '';
     el.innerHTML = `<div class="ip-row">${act}<span class="ip-icon" style="--c:${lab.color || '#e8c860'}">${lab.icon || ''}</span>`
       + `<span class="ip-title">${lab.title}</span>${cost}</div><div class="ip-sub">${lab.sub || ''}</div>`
       + (lab.progress != null ? `<div class="ip-prog"><i style="width:${(lab.progress * 100).toFixed(1)}%"></i></div>` : '');
@@ -76321,6 +76906,11 @@ export class UI {
       fov: saved.fov ?? CONFIG.player.fov,
       artStyle: saved.artStyle ?? '1930s',
       ultraOffer: saved.ultraOffer ?? false,
+      invertY: saved.invertY ?? false,
+      aimToggle: saved.aimToggle ?? false,
+      sprintToggle: saved.sprintToggle ?? false,
+      seenHowTo: saved.seenHowTo ?? false,
+      tips: saved.tips ?? true,
     };
     // Ultra arrived after some saves already said 'high': upgrade those once on a
     // strong card (the frame-rate watchdog still steps it back if it struggles)
@@ -76346,6 +76936,10 @@ export class UI {
     $('set-quality').value = g.settings.quality;
     $('set-fov').value = g.settings.fov;
     $('fov-val').textContent = g.settings.fov + '°';
+    $('set-invert-y').checked = g.settings.invertY;
+    $('set-aim-mode').value = g.settings.aimToggle ? 'toggle' : 'hold';
+    $('set-sprint-mode').value = g.settings.sprintToggle ? 'toggle' : 'hold';
+    $('set-tips').checked = g.settings.tips !== false;
 
     const apply = () => {
       g.settings.sensitivity = parseFloat($('set-sensitivity').value);
@@ -76357,6 +76951,15 @@ export class UI {
       $('perf-hud').classList.toggle('off', !g.settings.showPerf);
       g.settings.fov = parseInt($('set-fov').value, 10);
       $('fov-val').textContent = g.settings.fov + '°';
+      $('sens-val').textContent = `${g.settings.sensitivity.toFixed(1)}×`;
+      g.settings.invertY = $('set-invert-y').checked;
+      g.settings.aimToggle = $('set-aim-mode').value === 'toggle';
+      g.settings.sprintToggle = $('set-sprint-mode').value === 'toggle';
+      const tips = $('set-tips').checked;
+      if (tips && g.settings.tips === false) g.coach?.reset();          // back on: every tip again
+      g.settings.tips = tips;
+      if (!g.settings.aimToggle && g.player) g.player.aiming = false;
+      if (!g.settings.sprintToggle && g.player) g.player.sprintLatch = false;
       const q = $('set-quality').value;
       if (q !== g.settings.quality) {
         g.settings.quality = q;
@@ -76365,12 +76968,114 @@ export class UI {
       Audio.setVolumes(g.settings.master, g.settings.sfx, g.settings.music);
       this.saveSettings();
     };
-    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality']) {
+    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality',
+      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips']) {
       $(id).addEventListener('input', apply);
       $(id).addEventListener('change', apply);
     }
     $('btn-fullscreen').onclick = () => window.HOTU_toggleFullscreen?.();
+    // two pages: picture & sound, and controls
+    for (const tab of document.querySelectorAll('.set-tab')) {
+      tab.onclick = () => this.settingsPage(tab.dataset.page);
+    }
+    this._wireBinds();
     apply();
+  }
+
+  /** flip the settings card to a page: 'game' or 'controls' */
+  settingsPage(page) {
+    this._cancelBind?.();
+    for (const t of document.querySelectorAll('.set-tab')) t.classList.toggle('on', t.dataset.page === page);
+    for (const p of document.querySelectorAll('.set-page')) p.classList.toggle('hidden', p.dataset.page !== page);
+  }
+
+  // ------------------------------ key binds -----------------------------------
+  /** the rebinding grid: click an action, press a key (Esc cancels) */
+  _wireBinds() {
+    const grid = $('bind-grid');
+    const render = () => {
+      grid.innerHTML = ACTIONS.map((a) => {
+        const list = Binds.map[a.id];
+        const extra = list.length > 1 ? `<small>${list.slice(1).map((c) => Binds.keyName(c)).join(' ')}</small>` : '';
+        return `<div class="bind-row"><span>${a.label}</span><button class="bind-key${this._capturing === a.id ? ' listening' : ''}" data-act="${a.id}">`
+          + `${this._capturing === a.id ? 'PRESS A KEY…' : Binds.label(a.id)}${this._capturing === a.id ? '' : extra}</button></div>`;
+      }).join('');
+    };
+    this._renderBinds = render;
+    const finish = (code) => {
+      const act = this._capturing;
+      this._cancelBind();
+      if (!code || !act) return;
+      const swapped = Binds.set(act, code);
+      render();
+      if (swapped) {
+        const row = grid.querySelector(`[data-act="${swapped}"]`);
+        row?.classList.add('swapped');
+        setTimeout(() => row?.classList.remove('swapped'), 900);
+      }
+    };
+    const onKey = (e) => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      finish(e.code === 'Escape' || RESERVED.has(e.code) ? null : e.code);
+    };
+    const onMouse = (e) => {
+      if (e.button === 0 || e.button === 2) {                 // left/right mouse: cancel (they fire and aim)
+        if (!e.target.closest?.('.bind-key')) { e.stopImmediatePropagation(); this._cancelBind(); }
+        return;
+      }
+      e.preventDefault(); e.stopImmediatePropagation();
+      finish(`Mouse${e.button}`);
+    };
+    this._cancelBind = () => {
+      if (!this._capturing) return;
+      this._capturing = null;
+      removeEventListener('keydown', onKey, true);
+      removeEventListener('mousedown', onMouse, true);
+      render();
+    };
+    grid.addEventListener('click', (e) => {
+      const b = e.target.closest('.bind-key');
+      if (!b) return;
+      const was = this._capturing;
+      this._cancelBind();
+      if (was === b.dataset.act) return;                     // a second click puts it back down
+      this._capturing = b.dataset.act;
+      addEventListener('keydown', onKey, true);
+      addEventListener('mousedown', onMouse, true);
+      render();
+    });
+    $('btn-binds-reset').onclick = () => { this._cancelBind(); Binds.reset(); render(); };
+    addEventListener('hotu-binds', () => { render(); this.renderControlsHint(); this._gearHtml = null; this._ip = null; });
+    render();
+    this.renderControlsHint();
+  }
+
+  /** HOW TO PLAY: the four-step card. then() runs when they're done reading */
+  howTo(then, label = 'GOT IT') {
+    const g = this.game;
+    for (const el of document.querySelectorAll('#howto-panel .hk')) {
+      el.textContent = el.dataset.act === 'move' ? Binds.moveLabel() : Binds.label(el.dataset.act);
+    }
+    $('btn-howto-go').textContent = label;
+    $('btn-howto-go').onclick = () => { this.hide('howto-panel'); then?.(); };
+    this.show('howto-panel');
+    if (!g.settings.seenHowTo) { g.settings.seenHowTo = true; this.saveSettings(); }
+  }
+
+  /** the key list on the main menu, from the live binds */
+  renderControlsHint() {
+    const el = document.querySelector('.menu-controls');
+    if (!el) return;
+    const k = (a) => `<kbd>${Binds.label(a)}</kbd>`;
+    const rows = [
+      [`<kbd>${Binds.moveLabel()}</kbd>`, 'move'], ['<kbd>MOUSE</kbd>', 'aim · fire'], ['<kbd>RMB</kbd>', 'iron sights'],
+      [k('sprint'), 'sprint'], [k('jump'), 'jump'], [k('dash'), 'dash'],
+      [k('lethal'), 'lethal'], [k('tactical'), 'tactical'], [k('use'), 'use · buy · revive'],
+      [k('melee'), 'pistol-whip'], [k('reload'), 'reload'], [`${k('gun1')}${k('gun2')}${k('gun3')} / <kbd>WHEEL</kbd>`, 'guns'],
+      [k('scores'), 'scoreboard'], ['<kbd>ESC</kbd>', 'pause'], ['<kbd>F11</kbd>', 'fullscreen'],
+    ];
+    el.innerHTML = rows.map(([key, what]) => `<div>${key} ${what}</div>`).join('');
+    $('sb-key').textContent = Binds.label('scores');
   }
 
   saveSettings() {
@@ -77350,6 +78055,7 @@ export class Weapons {
     const dropped = this.slots[i];
     if (dropped && this.arsenal[dropped].packed) { this.arsenal[dropped].packed = false; this.gild(dropped, false); }
     this.slots[i] = id;
+    if (this.slots.filter(Boolean).length > 1) g.coach?.tip('guns');
     if (w.packed) { w.packed = false; this.gild(id, false); }
     w.mag = w.magSize;
     w.reserve = w.def.reserve;
@@ -77471,6 +78177,7 @@ export class Weapons {
     if (g.player.bledOut) return;
     const w = this.current;
     if (w.mag <= 0) {
+      g.coach?.tip('reload');
       Audio.play('dryfire');
       this.anim.dryFire(this.currentId);
       this.cooldown = 0.2;
@@ -78010,9 +78717,8 @@ export class Weapons {
 
     // ---- the gun as a machine: recoil, actions, reloads, melee, throws ----
     const w = this.current;
-    const keys = g.player.keys;
-    const moving = g.player.onGround && (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD']);
-    const sprinting = moving && (keys['ShiftLeft'] || keys['ShiftRight']) && !g.player.aiming
+    const moving = g.player.onGround && g.player.moving;
+    const sprinting = moving && g.player.sprinting && !g.player.aiming
       && this.cooldown <= 0 && !this.triggerHeld;
     const pose = this.anim.update(dt, this.currentId, {
       reloadP: this.reloading ? clamp(this.reloadT / w.reloadTime, 0, 1) : 1,
@@ -78062,7 +78768,7 @@ export class Weapons {
       baseY + swayY * (aim ? 0.3 : 1) + breathe * (aim ? 0.3 : 1) + lookY + this._airDip,
       baseZ);
     this.vm.position.lerp(target, Math.min(1, dt * 14));
-    const strafe = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+    const strafe = (g.player.held('right') ? 1 : 0) - (g.player.held('left') ? 1 : 0);
     this._tilt = (this._tilt || 0) + (-strafe * 0.05 - (this._tilt || 0)) * Math.min(1, dt * 6);
     this.vm.rotation.x = 0.02 + (moving ? Math.cos(g.player.bobT * 2) * 0.008 * run : 0);
     this.vm.rotation.y += ((aim ? 0 : hip[3]) + lookX * 2 - this.vm.rotation.y) * Math.min(1, dt * 10);
