@@ -17,13 +17,6 @@ There are no image, model, or audio files in the project. Everything you see and
 * **Any browser:** open `HOUSE OF THE UNDEAD.html`
 * **From the source folder:**
 
-```powershell
-cd HOUSE-OF-THE-UNDEAD
-python -m http.server 8000
-```
-
-Then open `http://localhost:8000`.
-
 ## Controls
 
 New players get a HOW TO PLAY card and short tips the first time each thing comes up. Every key below can be rebound in Settings → Controls (which also has invert Y, and hold or toggle for aiming and sprinting).
