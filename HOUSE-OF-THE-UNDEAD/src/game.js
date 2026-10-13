@@ -29,6 +29,8 @@ import { Progress } from './progress.js';
 import { ZONES } from './arena.js';
 import { LETHALS, TACTICALS } from './catalog.js';
 import { Seed } from './rng.js';
+import { Binds } from './input.js';
+import { Coach } from './coach.js';
 import { makeEnvironment } from './gfx/env.js';
 import { STYLE } from './gfx/style.js';
 import { PostFX } from './gfx/postfx.js';
@@ -37,6 +39,12 @@ import { skinFor, variantsOf, LOOKS } from './chars/skins.js';
 import { bodyFor } from './chars/rig.js';
 
 const $ = (id) => document.getElementById(id);
+
+// who the loading screen says it's dressing (the four players' looks are all "gamblers")
+const DRESSING = {
+  pitguard: 'the pit guards', jackpot: 'the jackpots', gambler: 'the gamblers', gambler2: 'the gamblers', gambler3: 'the gamblers',
+  gambler4: 'the gamblers', king: 'the King', pitboss: 'the Pit Boss', housedealer: 'the House Dealer',
+};
 
 // special round modifiers — rolled on non-boss rounds 3+ (40% chance)
 const SPECIAL_ROUNDS = [
@@ -143,6 +151,7 @@ export class Game {
     this.rewards = new Rewards(this);     // comps, streak tiers, the progressive, surprises
     this.wonder = new Wonder(this);       // LADY LUCK, built from three parts
     this.allIn = new AllIn(this);         // the house's pack-a-punch
+    this.coach = new Coach(this);         // the first night's tips
     this.loadout = null;
     this._interactables = null;
     this.interactTarget = null;
@@ -396,7 +405,7 @@ export class Game {
       this.interactTarget = { revive: rv };
       this.ui.interactPrompt({
         title: pct > 0 ? `REVIVING ${rv.name}…` : `REVIVE ${rv.name}`,
-        sub: pct > 0 ? 'Keep holding E' : `Hold E — they bleed out in ${Math.max(0, Math.ceil(rv.downT))}s`,
+        sub: pct > 0 ? `Keep holding ${Binds.label('use')}` : `Hold ${Binds.label('use')} — they bleed out in ${Math.max(0, Math.ceil(rv.downT))}s`,
         action: 'HOLD', icon: '✚', color: '#5dff9a', progress: pct,
       });
       return;
@@ -417,6 +426,7 @@ export class Game {
     }
     this.interactTarget = best;
     this.ui.interactPrompt(best ? best.lab : null);
+    if (best && best.lab.cost != null) this.coach.tip('buy');
   }
 
   tryInteract() {
@@ -491,7 +501,7 @@ export class Game {
     const frame = () => new Promise((r) => setTimeout(r, 0));
     for (let i = 0; i < jobs.length; i++) {
       skinFor(jobs[i][0], jobs[i][1]);
-      onProgress((i + 1) / (jobs.length + 2), `Dressing the ${jobs[i][0] === 'housedealer' ? 'house dealer' : jobs[i][0] === 'pitboss' ? 'pit boss' : jobs[i][0]}s…`);
+      onProgress((i + 1) / (jobs.length + 2), `Dressing ${DRESSING[jobs[i][0]] || `the ${jobs[i][0]}s`}…`);
       await frame();
     }
     this.arena.addShow();          // the dead chorus line on the lounge stage
@@ -601,10 +611,12 @@ export class Game {
     this.setState('PAUSED');
     $('pause-seed').textContent = Seed.text;
     if (this.net.active) this.ui.prompt('Co-op keeps playing while you\'re paused!', 2500);
+    else Audio.setPaused(true);                // the band, through the door of the next room
     this.ui.show('pause-menu');
   }
 
   resume() {
+    Audio.setPaused(false);
     this.ui.hide('pause-menu');
     this.setState(this._stateBeforePause || 'COMBAT');
   }
@@ -657,6 +669,7 @@ export class Game {
 
   onKill(zombie) {
     this.stats.kills++;
+    this.coach.tip('chips');
     this.combo++;
     if (zombie.kind === 'jackpot') {
       this.ui.banner('JACKPOT CASHED OUT!', 'gold', 2000);
@@ -981,6 +994,7 @@ export class Game {
   }
 
   cashOut() {
+    Audio.sting('win');
     this.ui.showSummary(true, `You cashed out after round ${this.round} and walked into the sunrise.`);
   }
 
@@ -1022,6 +1036,7 @@ export class Game {
     Audio.setBossMode(false);
     this.arena.setRedAlert(false);
     const won = this.beatHouse;   // dying deep in endless still counts as a win
+    Audio.sting(won ? 'win' : 'lose');
     setTimeout(() => this.ui.irisSwap(() => this.ui.showSummary(won,
       won ? `The house got you on round ${this.round} — but you beat it first.`
           : `Taken down by ${cause} on round ${this.round}.`), 800), 700);
@@ -1030,7 +1045,16 @@ export class Game {
   // ------------------------------- menus ------------------------------------
   _wireMenus() {
     // ENTER THE CASINO goes through the Coat Check first (pick / build a class)
-    $('btn-start').onclick = () => { Audio.init(); this.coatCheck.open(); };
+    // the very first night: the house explains itself on the way in
+    $('btn-start').onclick = () => {
+      Audio.init();
+      // (anyone with runs on the books already knows the house)
+      if (this.settings.seenHowTo || this.ui.loadHighscore().runs > 0) { this.coatCheck.open(); return; }
+      this.ui.hide('main-menu');
+      this.ui.howTo(() => this.coatCheck.open(), 'GOT IT — TO THE COAT CHECK ▸');
+    };
+    $('btn-howto').onclick = () => { this.ui.hide('main-menu'); this.ui.howTo(() => this.ui.show('main-menu'), '◂ BACK TO THE MENU'); };
+    $('btn-howto-pause').onclick = () => { this.ui.hide('pause-menu'); this.ui.howTo(() => { if (this.state === 'PAUSED') this.ui.show('pause-menu'); }, '◂ BACK'); };
     $('btn-continue').onclick = () => { Audio.init(); this.continueRun(); };
     $('btn-seed').onclick = () => { Audio.init(); this.coatCheck.open(true); };
     $('btn-replay-seed').onclick = () => this.newRun(null, Seed.text);
@@ -1085,6 +1109,7 @@ export class Game {
     $('btn-markers-close').onclick = () => { this.ui.hide('markers-panel'); this._refreshMenu(); this.ui.show('main-menu'); };
     $('btn-settings-pause').onclick = () => openSettings('pause-menu');
     $('btn-settings-close').onclick = () => {
+      this.ui._cancelBind?.();
       this.ui.hide('settings-panel');
       this.ui.show(this._settingsReturn || 'main-menu');
     };
@@ -1100,6 +1125,7 @@ export class Game {
     }
 
     this.net.update(rawDt);
+    this.coach.update(rawDt);
     let state = this.state;
     this.rewards.update(rawDt, this.state === 'COMBAT' || (this.state === 'PAUSED' && this.net.active && this._stateBeforePause === 'COMBAT'));
     if (state === 'PAUSED' && this.net.active && this.net.inRun
@@ -1122,6 +1148,10 @@ export class Game {
         if (this._countdownT <= 0) {
           if (this.state === 'PAUSED') this._stateBeforePause = 'COMBAT';
           else this.setState('COMBAT');
+          this.coach.tip('move');
+          if (this.round >= 2) this.coach.tip('gear');
+          if (this.net.active) this.coach.tip('coop');
+          if (this.objective) this.coach.tip('objective');
         }
         break;
       }
@@ -1208,6 +1238,8 @@ export class Game {
           Audio.setIntensity(this.state === 'MENU' ? 0.1 : 0.15);
           Audio.setHealth(1);
         }
+        // paused alone: the room goes muffled (co-op keeps playing, so it stays clear)
+        Audio.setPaused(this.state === 'PAUSED' && !this.net.active);
       }
     }
     // low health: color drains, the edges pulse red

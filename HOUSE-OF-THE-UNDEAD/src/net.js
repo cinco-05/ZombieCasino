@@ -24,6 +24,7 @@ import { buildWorldGun } from './gfx/viewmodels.js';
 import { GUNFX } from './weapons.js';
 import { STYLE } from './gfx/style.js';
 import { randomSeed } from './rng.js';
+import { Binds } from './input.js';
 
 const PROTO = 2;
 const PREFIX = 'hotu-coop-';
@@ -418,6 +419,17 @@ export class Net {
     return new window.Peer(id, { debug: 0 });
   }
 
+  /** a link that opens the game and sits a friend straight down at this table.
+      Only where the game is served from a web address a friend can open too */
+  inviteLink() {
+    if (!this.code || !/^https?:$/.test(location.protocol) || window.chrome?.webview) return null;
+    const u = new URL(location.href);
+    u.search = '';
+    u.hash = '';
+    u.searchParams.set('join', this.code);
+    return u.toString();
+  }
+
   /** the four seats in the lobby: who's sitting where */
   renderSeats() {
     const el = $('coop-seats');
@@ -449,7 +461,13 @@ export class Net {
     peer.on('open', () => {
       $('coop-code').textContent = this.code;
       $('coop-code-wrap').classList.remove('hidden');
-      this._status(`Send your friends this code — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`);
+      const link = this.inviteLink();
+      $('btn-coop-invite').classList.toggle('hidden', !link);
+      $('coop-invite').classList.toggle('hidden', !link);
+      $('coop-invite').textContent = link || '';
+      this._status(link
+        ? `Send your friends the invite link (or just the code) — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`
+        : `Send your friends this code — up to ${MAX_PLAYERS - 1} of them. Waiting for them to sit down…`);
       this.renderSeats();
     });
     peer.on('connection', (conn) => {
@@ -473,7 +491,11 @@ export class Net {
       if (seat >= MAX_PLAYERS) { refuse('full'); return; }
       conn._seat = seat;
       this.links.set(seat, conn);
-      this.players.set(seat, new RemotePlayer(this.game, seat, cleanName(m.name) || `PLAYER ${seat + 1}`));
+      // two windows of one browser share a saved name: keep the table's names apart
+      let nm = cleanName(m.name) || `PLAYER ${seat + 1}`;
+      const taken = new Set([this.name, ...this.remotes().map((r) => r.name)]);
+      if (taken.has(nm)) nm = `${nm.slice(0, 13)} ${seat + 1}`;
+      this.players.set(seat, new RemotePlayer(this.game, seat, nm));
       conn.send({ t: 'welcome', seat });
       this._rosterOut();
       this._status(`${this.players.get(seat).name} sat down at seat ${seat + 1}. Deal when everyone's in.`, 'good');
@@ -529,8 +551,14 @@ export class Net {
       conn.on('data', (m) => { this._hostLast = performance.now(); try { this._onMsg(m, 0); } catch (err) { console.error('[net]', err); } });
       conn.on('close', () => this._hostGone());
       conn.on('error', () => this._hostGone());
-      setTimeout(() => { if (!this.welcomed && this.role === 'guest') this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
+      setTimeout(() => { if (!this.welcomed && this.role === 'guest' && this.peer === peer) this._status('Still knocking… check the code, and that your friend is on the co-op screen.', 'bad'); }, 9000);
     });
+    // nobody answered: stand back up so they can try again
+    setTimeout(() => {
+      if (this.welcomed || this.role !== 'guest' || this.peer !== peer) return;
+      this.leave(true);
+      this._status(`Couldn't reach table ${code}. Check the code, make sure the host is still on the co-op screen, and try again. Very strict networks (some offices and schools) block co-op.`, 'bad');
+    }, 25000);
     peer.on('error', (e) => this._peerError(e));
   }
 
@@ -744,7 +772,7 @@ export class Net {
     this.downCause = cause;
     g.weapons.reloading = false;
     Audio.play('boss_phase');
-    g.ui.banner("YOU'RE DOWN — A TEAMMATE CAN HOLD E ON YOU TO DEAL YOU BACK IN", 'red', 3200);
+    g.ui.banner(`YOU'RE DOWN — A TEAMMATE CAN HOLD ${Binds.label('use')} ON YOU TO DEAL YOU BACK IN`, 'red', 3200);
     this._sendState();
   }
 
@@ -1219,7 +1247,7 @@ export class Net {
       if (nm.textContent !== r.name) nm.textContent = r.name;
       row.querySelector('.fill').style.width = `${Math.max(0, Math.min(100, (r.hp / r.maxHp) * 100))}%`;
       const st = row.querySelector('.coop-state');
-      const txt = !r.seen ? 'connecting…' : r.bled ? 'BLED OUT — back next round' : r.down ? `DOWN — ${r.downT}s — hold E on them!` : `${Math.round(r.hp)} HP`;
+      const txt = !r.seen ? 'connecting…' : r.bled ? 'BLED OUT — back next round' : r.down ? `DOWN — ${r.downT}s — hold ${Binds.label('use')} on them!` : `${Math.round(r.hp)} HP`;
       if (st.textContent !== txt) st.textContent = txt;
       row.classList.toggle('down', r.down || r.bled);
     }
@@ -1231,7 +1259,7 @@ export class Net {
       const b = $('coop-down-t');
       if (b.textContent !== txt) b.textContent = txt;
       $('coop-down-sub').textContent = p.bledOut ? 'The rest of the table has to clear the round'
-        : 'Hang on — a teammate can stand over you and hold E to deal you back in';
+        : `Hang on — a teammate can stand over you and hold ${Binds.label('use')} to deal you back in`;
     }
   }
 }

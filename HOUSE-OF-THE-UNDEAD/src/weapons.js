@@ -233,6 +233,7 @@ export class Weapons {
     const dropped = this.slots[i];
     if (dropped && this.arsenal[dropped].packed) { this.arsenal[dropped].packed = false; this.gild(dropped, false); }
     this.slots[i] = id;
+    if (this.slots.filter(Boolean).length > 1) g.coach?.tip('guns');
     if (w.packed) { w.packed = false; this.gild(id, false); }
     w.mag = w.magSize;
     w.reserve = w.def.reserve;
@@ -354,6 +355,7 @@ export class Weapons {
     if (g.player.bledOut) return;
     const w = this.current;
     if (w.mag <= 0) {
+      g.coach?.tip('reload');
       Audio.play('dryfire');
       this.anim.dryFire(this.currentId);
       this.cooldown = 0.2;
@@ -893,9 +895,8 @@ export class Weapons {
 
     // ---- the gun as a machine: recoil, actions, reloads, melee, throws ----
     const w = this.current;
-    const keys = g.player.keys;
-    const moving = g.player.onGround && (keys['KeyW'] || keys['KeyA'] || keys['KeyS'] || keys['KeyD']);
-    const sprinting = moving && (keys['ShiftLeft'] || keys['ShiftRight']) && !g.player.aiming
+    const moving = g.player.onGround && g.player.moving;
+    const sprinting = moving && g.player.sprinting && !g.player.aiming
       && this.cooldown <= 0 && !this.triggerHeld;
     const pose = this.anim.update(dt, this.currentId, {
       reloadP: this.reloading ? clamp(this.reloadT / w.reloadTime, 0, 1) : 1,
@@ -945,7 +946,7 @@ export class Weapons {
       baseY + swayY * (aim ? 0.3 : 1) + breathe * (aim ? 0.3 : 1) + lookY + this._airDip,
       baseZ);
     this.vm.position.lerp(target, Math.min(1, dt * 14));
-    const strafe = (keys['KeyD'] ? 1 : 0) - (keys['KeyA'] ? 1 : 0);
+    const strafe = (g.player.held('right') ? 1 : 0) - (g.player.held('left') ? 1 : 0);
     this._tilt = (this._tilt || 0) + (-strafe * 0.05 - (this._tilt || 0)) * Math.min(1, dt * 6);
     this.vm.rotation.x = 0.02 + (moving ? Math.cos(g.player.bobT * 2) * 0.008 * run : 0);
     this.vm.rotation.y += ((aim ? 0 : hip[3]) + lookX * 2 - this.vm.rotation.y) * Math.min(1, dt * 10);

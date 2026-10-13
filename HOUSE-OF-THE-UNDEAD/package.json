@@ -1,7 +1,7 @@
 {
   "name": "house-of-the-undead",
-  "version": "0.2.0",
-  "description": "",
+  "version": "1.0.0",
+  "description": "HOUSE OF THE UNDEAD: a 1930s cartoon casino roguelite shooter for 1-4 players, in the browser.",
   "main": "index.js",
   "directories": {
     "test": "test"

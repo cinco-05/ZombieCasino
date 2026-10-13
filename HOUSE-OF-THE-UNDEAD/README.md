@@ -48,6 +48,60 @@ powershell -ExecutionPolicy Bypass -File build-html.ps1
 
 No PowerShell? `node build-html.mjs` builds the same file.
 
+## Play it online
+
+Once GitHub Pages is switched on for the repository (Settings → Pages →
+Source: **GitHub Actions**), every push to `main` publishes the game to
+**https://cinco-05.github.io/zombiecasino/**. The workflow
+(`.github/workflows/pages.yml`) runs the unit tests, builds the single-file
+game with `node build-html.mjs` and publishes it with the cover image. On the
+web, the co-op screen also hands out **invite links** (see below).
+
+## Revamp 6: the final polish
+
+- **HOW TO PLAY.** A four-step card (survive the round, earn chips, gamble for
+  upgrades, beat the house) plus co-op, seeds and controls. It opens by itself
+  the first time someone clicks ENTER THE CASINO, and lives on the main menu
+  after that. (`index.html`, `UI.howTo` in `src/ui.js`.)
+- **Tips for new players.** A small card on the left of the screen explains
+  each thing the first time it comes up: moving and dashing, what chips are
+  for, buying with E, getting out of trouble at low health, reloading and the
+  pistol-whip, your lethal and tactical, switching guns, side bets, and co-op.
+  Each tip shows once, never covers the crosshair, and waits if you pause.
+  Settings → *Tips for new players* brings them all back. (`src/coach.js`.)
+- **Rebind every key.** Settings now has two pages: PICTURE & SOUND and
+  CONTROLS. On CONTROLS, click any action and press its new key (Esc cancels).
+  If the key was already in use, the two actions swap, so nothing is ever left
+  without a key. The mouse wheel click and the two side buttons can be bound
+  too. RESET KEYS TO DEFAULT puts everything back. Every key hint in the game
+  (the HUD, the buy prompts, revives, the tips, the menu's key list, the
+  scoreboard footer) follows your binds. Keys are bound by where they sit on
+  the keyboard, and labelled in your own layout where the browser shares it,
+  so AZERTY players see Z Q S D. (`src/input.js`.)
+- **More control options:** invert mouse Y, aim down sights by holding or
+  toggling the right mouse button, and sprint by holding or tapping the sprint
+  key (toggle sprint lets go when you stop moving).
+- **Co-op invite links.** On the web, HOST A TABLE shows **COPY INVITE LINK**
+  next to the code. A friend who opens the link loads the game straight into
+  your table, with no code to type. If a table can't be reached within 25
+  seconds, the lobby says so and lets you try again instead of knocking
+  forever.
+- **Esc backs out** of Settings, How to Play, the Vault, Markers and the Coat
+  Check.
+- **The band steps outside when you pause.** Paused alone, the music drops and
+  goes muffled, as if it were coming through the door of the next room. (In
+  co-op the game keeps going, so the sound stays clear.)
+- **When something can't work, the game says so.** A browser without WebGL 2
+  gets a clear message and what to try, instead of a loading bar that never
+  moves; so does anything that goes wrong while loading (with a TRY AGAIN
+  button). A phone or tablet with no mouse gets a note on the main menu that
+  the game wants a keyboard and mouse. An invite link opened before anyone
+  clicks still gets its sound once they do.
+- **Fixed:** in the 1930s art styles, the drop-downs in Settings were dark
+  text on a dark box and couldn't be read.
+- **Share-ready:** a favicon, a page description, and a cover image for link
+  previews (`press/cover.png`).
+
 ## Revamp 5: the lounge band, 3D tables, the bandit, and seeds
 
 - **A jazz band in the lounge.** The haunted music box, the drone and the
@@ -209,12 +263,16 @@ Main menu → **PLAY WITH FRIENDS (UP TO 4)**.
 
 - **Your name:** type it at the top of the co-op screen. It goes over your
   head, on the scoreboard and in the table's banners, and it's remembered.
-- **Host:** click **HOST A TABLE**. You get a 5-letter room code (COPY puts it
-  on your clipboard). Send it to up to three friends. The four seats fill up
+- **Host:** click **HOST A TABLE**. You get a 5-letter room code (COPY CODE
+  puts it on your clipboard). When the game is played from a web address, there
+  is also **COPY INVITE LINK**: a friend who opens it lands right at your
+  table. Send either one to up to three friends. The four seats fill up
   as they sit down; click **DEAL US IN** when everyone's there. Want a
   particular seed? Type it at the Coat Check (CHANGE CLASS) before you deal.
-- **Join:** type the code and click **JOIN**. A full table, a table already
-  mid-game, or a different build of the game turns you away and says why.
+- **Join:** open the invite link, or type the code and click **JOIN**. A full
+  table, a table already mid-game, or a different build of the game turns you
+  away and says why. A table that can't be reached at all gives up after 25
+  seconds and says so.
 - **Class:** each of you picks your own with CHANGE CLASS (the Coat Check).
 - Works with either version of the game (exe or the .html file), as long as
   everyone has the same build and an internet connection.
@@ -614,6 +672,10 @@ live with WebAudio, and every texture is painted procedurally at load.
 
 ## Controls
 
+These are the defaults. Every key in the top part of the table can be rebound
+in Settings → Controls, which also has invert Y, hold/toggle aim and
+hold/toggle sprint.
+
 | Key | Action |
 |---|---|
 | WASD | move |
@@ -623,11 +685,11 @@ live with WebAudio, and every texture is painted procedurally at load.
 | **Q** | **dash** (brief invulnerability) |
 | **G** | **lethal** (chip bomb, sambuca, velvet rope, false jackpot) |
 | **T** | **tactical** (bellini, missing clock, paparazzi flash, eye in the sky) |
-| **E** | **use / buy** — doors, cocktail automats, the Big Six |
+| **E** | **use / buy / revive** — doors, cocktail automats, the Big Six, a downed teammate |
 | **F** | **melee** pistol-whip |
 | R | reload |
 | 1–3 / wheel | your guns (3 needs a Split the Pair Spritz) |
-| Esc | pause |
+| Esc | pause; backs out of menus |
 | F11 | fullscreen / window |
 | F3 | debug panel |
 | TAB (hold) | scoreboard: ping, kills, deaths, damage, chips |

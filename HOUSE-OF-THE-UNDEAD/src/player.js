@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { CONFIG, clamp } from './config.js';
 import { Audio } from './audio.js';
+import { Binds } from './input.js';
 
 const P = CONFIG.player;
 
@@ -46,6 +47,7 @@ export class Player {
     this.grenades = CONFIG.grenade.start;
     this.dashCd = 0; this.dashT = 0;
     this.aiming = false;
+    this.sprintLatch = false;
     this.hurtKick = { x: 0, y: 0 };
     this.roll = 0;
   }
@@ -55,8 +57,16 @@ export class Player {
     this._lookDX = (this._lookDX || 0) + dx;     // feeds the viewmodel's look sway
     this._lookDY = (this._lookDY || 0) + dy;
     this.yaw -= dx * s;
-    this.pitch = clamp(this.pitch - dy * s, -1.45, 1.45);
+    this.pitch = clamp(this.pitch - dy * s * (this.game.settings.invertY ? -1 : 1), -1.45, 1.45);
   }
+
+  /** is a bound action's key held? (see input.js) */
+  held(action) { return Binds.held(this.keys, action); }
+
+  /** moving at sprint: the key held, or latched on in toggle mode */
+  get sprinting() { return this.game.settings.sprintToggle ? !!this.sprintLatch : this.held('sprint'); }
+  /** wanting to move at all */
+  get moving() { return this.held('forward') || this.held('back') || this.held('left') || this.held('right'); }
 
   /** co-op: on your feet (not bleeding out, not bled out) */
   get alive() { return !this.downed && !this.bledOut; }
@@ -75,10 +85,10 @@ export class Player {
   tryDash() {
     if (this.dashCd > 0 || this.dashT > 0) return;
     const dir = new THREE.Vector3();
-    if (this.keys['KeyW']) dir.add(this.forwardFlat());
-    if (this.keys['KeyS']) dir.sub(this.forwardFlat());
-    if (this.keys['KeyD']) dir.add(this.rightFlat());
-    if (this.keys['KeyA']) dir.sub(this.rightFlat());
+    if (this.held('forward')) dir.add(this.forwardFlat());
+    if (this.held('back')) dir.sub(this.forwardFlat());
+    if (this.held('right')) dir.add(this.rightFlat());
+    if (this.held('left')) dir.sub(this.rightFlat());
     if (dir.lengthSq() < 0.01) dir.copy(this.forwardFlat());
     dir.normalize();
     this.dashDir.copy(dir);
@@ -103,14 +113,17 @@ export class Player {
 
     // horizontal intent
     const dir = new THREE.Vector3();
-    if (this.keys['KeyW']) dir.add(this.forwardFlat());
-    if (this.keys['KeyS']) dir.sub(this.forwardFlat());
-    if (this.keys['KeyD']) dir.add(this.rightFlat());
-    if (this.keys['KeyA']) dir.sub(this.rightFlat());
+    if (this.held('forward')) dir.add(this.forwardFlat());
+    if (this.held('back')) dir.sub(this.forwardFlat());
+    if (this.held('right')) dir.add(this.rightFlat());
+    if (this.held('left')) dir.sub(this.rightFlat());
     if (dir.lengthSq() > 0) dir.normalize();
 
     let speed = P.speed;
-    if (this.keys['ShiftLeft'] || this.keys['ShiftRight']) speed *= P.sprintMult;
+    // toggle sprint lets go once you've stood still a moment (a tap before moving still counts)
+    this._stillT = dir.lengthSq() === 0 ? (this._stillT || 0) + dt : 0;
+    if (this._stillT > 0.35) this.sprintLatch = false;
+    if (this.sprinting) speed *= P.sprintMult;
     if (this.aiming) speed *= 0.55;
     speed *= g.casino.roundMods.playerSlowMult || 1;
     speed *= g.playerMods.speed * (g.perkFx?.speed || 1);
@@ -131,7 +144,7 @@ export class Player {
     this.pos.add(move);
 
     // jump + gravity
-    if (this.keys['Space'] && this.onGround) {
+    if (this.held('jump') && this.onGround) {
       this.vel.y = P.jumpVel;
       this.onGround = false;
     }
@@ -168,7 +181,7 @@ export class Player {
     const bob = bobbing ? Math.sin(this.bobT * 2) * 0.026 * amp : 0;
     const sideBob = bobbing ? Math.sin(this.bobT) * 0.022 * amp : 0;
     const landDip = this.landDipT > 0 ? Math.sin((1 - this.landDipT / 0.2) * Math.PI) * 0.09 * (this.landAmt ?? 1) : 0;
-    const strafe = (this.keys['KeyD'] ? 1 : 0) - (this.keys['KeyA'] ? 1 : 0);
+    const strafe = (this.held('right') ? 1 : 0) - (this.held('left') ? 1 : 0);
     this.roll = (this.roll || 0) + ((-strafe * 0.022 + (bobbing ? Math.sin(this.bobT) * 0.006 * amp : 0)) - (this.roll || 0)) * Math.min(1, dt * 8);
     this.hurtKick = this.hurtKick || { x: 0, y: 0 };
     this.hurtKick.x *= Math.exp(-dt * 9); this.hurtKick.y *= Math.exp(-dt * 9);
@@ -206,6 +219,7 @@ export class Player {
     }
     this.hp -= amount;
     if (g.rewards) g.rewards.hitThisRound = true;
+    if (this.hp < this.maxHp * 0.45) g.coach?.tip('hurt');
     // Loaded Dice: getting hit shakes chips loose
     if (g.playerMods.hitChipLoss > 0 && g.chips > 0) {
       g.chips = Math.max(0, g.chips - g.playerMods.hitChipLoss);

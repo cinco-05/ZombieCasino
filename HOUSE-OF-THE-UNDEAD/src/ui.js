@@ -18,6 +18,7 @@ const CARTOON_TITLES = [
 import { LOYALTY, MARKERS, CHIPS } from './progress.js';
 import { Seed } from './rng.js';
 import { SEAT_COLOR } from './net.js';
+import { ACTIONS, Binds, RESERVED } from './input.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -71,7 +72,7 @@ export class UI {
   show(id) { $(id).classList.remove('hidden'); }
   hide(id) { $(id).classList.add('hidden'); }
   hideAllPanels() {
-    for (const id of ['main-menu', 'pause-menu', 'settings-panel', 'boss-intro', 'coatcheck-panel', 'coop-panel', 'markers-panel',
+    for (const id of ['main-menu', 'pause-menu', 'settings-panel', 'boss-intro', 'coatcheck-panel', 'coop-panel', 'markers-panel', 'howto-panel',
       'intermission', 'blackjack-panel',
       'roulette-panel', 'slots-panel', 'poker-panel', 'upgrade-panel', 'summary-panel', 'vault-panel']) {
       this.hide(id);
@@ -120,8 +121,8 @@ export class UI {
 
     // lethal (G) + tactical (T) + dash + combo
     const L = LETHALS[p.lethalId], T = TACTICALS[p.tacticalId];
-    const gearHtml = `<span class="gear" style="--c:${L?.color || '#e0303c'}" title="${L?.name}"><kbd>G</kbd>${L?.icon}<b>${p.grenades}</b></span>`
-      + (T ? `<span class="gear" style="--c:${T.color}" title="${T.name}"><kbd>T</kbd>${T.icon}<b>${p.tacticals}</b></span>` : '');
+    const gearHtml = `<span class="gear" style="--c:${L?.color || '#e0303c'}" title="${L?.name}"><kbd>${Binds.label('lethal')}</kbd>${L?.icon}<b>${p.grenades}</b></span>`
+      + (T ? `<span class="gear" style="--c:${T.color}" title="${T.name}"><kbd>${Binds.label('tactical')}</kbd>${T.icon}<b>${p.tacticals}</b></span>` : '');
     if (gearHtml !== this._gearHtml) { $('gear-hud').innerHTML = gearHtml; this._gearHtml = gearHtml; }
     const dashPct = clamp(1 - p.dashCd / p.dashCooldown, 0, 1);
     $('dash-fill').style.width = `${dashPct * 100}%`;
@@ -366,7 +367,7 @@ export class UI {
     if (key === this._ip) return;
     this._ip = key;
     const cost = lab.cost != null ? `<span class="ip-cost${can ? '' : ' poor'}"><i class="chip-icon"></i>${lab.cost}</span>` : '';
-    const act = lab.cost != null || lab.action ? `<kbd>E</kbd>` : '';
+    const act = lab.cost != null || lab.action ? `<kbd>${Binds.label('use')}</kbd>` : '';
     el.innerHTML = `<div class="ip-row">${act}<span class="ip-icon" style="--c:${lab.color || '#e8c860'}">${lab.icon || ''}</span>`
       + `<span class="ip-title">${lab.title}</span>${cost}</div><div class="ip-sub">${lab.sub || ''}</div>`
       + (lab.progress != null ? `<div class="ip-prog"><i style="width:${(lab.progress * 100).toFixed(1)}%"></i></div>` : '');
@@ -562,6 +563,11 @@ export class UI {
       fov: saved.fov ?? CONFIG.player.fov,
       artStyle: saved.artStyle ?? '1930s',
       ultraOffer: saved.ultraOffer ?? false,
+      invertY: saved.invertY ?? false,
+      aimToggle: saved.aimToggle ?? false,
+      sprintToggle: saved.sprintToggle ?? false,
+      seenHowTo: saved.seenHowTo ?? false,
+      tips: saved.tips ?? true,
     };
     // Ultra arrived after some saves already said 'high': upgrade those once on a
     // strong card (the frame-rate watchdog still steps it back if it struggles)
@@ -587,6 +593,10 @@ export class UI {
     $('set-quality').value = g.settings.quality;
     $('set-fov').value = g.settings.fov;
     $('fov-val').textContent = g.settings.fov + '°';
+    $('set-invert-y').checked = g.settings.invertY;
+    $('set-aim-mode').value = g.settings.aimToggle ? 'toggle' : 'hold';
+    $('set-sprint-mode').value = g.settings.sprintToggle ? 'toggle' : 'hold';
+    $('set-tips').checked = g.settings.tips !== false;
 
     const apply = () => {
       g.settings.sensitivity = parseFloat($('set-sensitivity').value);
@@ -598,6 +608,15 @@ export class UI {
       $('perf-hud').classList.toggle('off', !g.settings.showPerf);
       g.settings.fov = parseInt($('set-fov').value, 10);
       $('fov-val').textContent = g.settings.fov + '°';
+      $('sens-val').textContent = `${g.settings.sensitivity.toFixed(1)}×`;
+      g.settings.invertY = $('set-invert-y').checked;
+      g.settings.aimToggle = $('set-aim-mode').value === 'toggle';
+      g.settings.sprintToggle = $('set-sprint-mode').value === 'toggle';
+      const tips = $('set-tips').checked;
+      if (tips && g.settings.tips === false) g.coach?.reset();          // back on: every tip again
+      g.settings.tips = tips;
+      if (!g.settings.aimToggle && g.player) g.player.aiming = false;
+      if (!g.settings.sprintToggle && g.player) g.player.sprintLatch = false;
       const q = $('set-quality').value;
       if (q !== g.settings.quality) {
         g.settings.quality = q;
@@ -606,12 +625,114 @@ export class UI {
       Audio.setVolumes(g.settings.master, g.settings.sfx, g.settings.music);
       this.saveSettings();
     };
-    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality']) {
+    for (const id of ['set-sensitivity', 'set-master', 'set-music', 'set-sfx', 'set-reduced-flash', 'set-show-perf', 'set-fov', 'set-quality',
+      'set-invert-y', 'set-aim-mode', 'set-sprint-mode', 'set-tips']) {
       $(id).addEventListener('input', apply);
       $(id).addEventListener('change', apply);
     }
     $('btn-fullscreen').onclick = () => window.HOTU_toggleFullscreen?.();
+    // two pages: picture & sound, and controls
+    for (const tab of document.querySelectorAll('.set-tab')) {
+      tab.onclick = () => this.settingsPage(tab.dataset.page);
+    }
+    this._wireBinds();
     apply();
+  }
+
+  /** flip the settings card to a page: 'game' or 'controls' */
+  settingsPage(page) {
+    this._cancelBind?.();
+    for (const t of document.querySelectorAll('.set-tab')) t.classList.toggle('on', t.dataset.page === page);
+    for (const p of document.querySelectorAll('.set-page')) p.classList.toggle('hidden', p.dataset.page !== page);
+  }
+
+  // ------------------------------ key binds -----------------------------------
+  /** the rebinding grid: click an action, press a key (Esc cancels) */
+  _wireBinds() {
+    const grid = $('bind-grid');
+    const render = () => {
+      grid.innerHTML = ACTIONS.map((a) => {
+        const list = Binds.map[a.id];
+        const extra = list.length > 1 ? `<small>${list.slice(1).map((c) => Binds.keyName(c)).join(' ')}</small>` : '';
+        return `<div class="bind-row"><span>${a.label}</span><button class="bind-key${this._capturing === a.id ? ' listening' : ''}" data-act="${a.id}">`
+          + `${this._capturing === a.id ? 'PRESS A KEY…' : Binds.label(a.id)}${this._capturing === a.id ? '' : extra}</button></div>`;
+      }).join('');
+    };
+    this._renderBinds = render;
+    const finish = (code) => {
+      const act = this._capturing;
+      this._cancelBind();
+      if (!code || !act) return;
+      const swapped = Binds.set(act, code);
+      render();
+      if (swapped) {
+        const row = grid.querySelector(`[data-act="${swapped}"]`);
+        row?.classList.add('swapped');
+        setTimeout(() => row?.classList.remove('swapped'), 900);
+      }
+    };
+    const onKey = (e) => {
+      e.preventDefault(); e.stopImmediatePropagation();
+      finish(e.code === 'Escape' || RESERVED.has(e.code) ? null : e.code);
+    };
+    const onMouse = (e) => {
+      if (e.button === 0 || e.button === 2) {                 // left/right mouse: cancel (they fire and aim)
+        if (!e.target.closest?.('.bind-key')) { e.stopImmediatePropagation(); this._cancelBind(); }
+        return;
+      }
+      e.preventDefault(); e.stopImmediatePropagation();
+      finish(`Mouse${e.button}`);
+    };
+    this._cancelBind = () => {
+      if (!this._capturing) return;
+      this._capturing = null;
+      removeEventListener('keydown', onKey, true);
+      removeEventListener('mousedown', onMouse, true);
+      render();
+    };
+    grid.addEventListener('click', (e) => {
+      const b = e.target.closest('.bind-key');
+      if (!b) return;
+      const was = this._capturing;
+      this._cancelBind();
+      if (was === b.dataset.act) return;                     // a second click puts it back down
+      this._capturing = b.dataset.act;
+      addEventListener('keydown', onKey, true);
+      addEventListener('mousedown', onMouse, true);
+      render();
+    });
+    $('btn-binds-reset').onclick = () => { this._cancelBind(); Binds.reset(); render(); };
+    addEventListener('hotu-binds', () => { render(); this.renderControlsHint(); this._gearHtml = null; this._ip = null; });
+    render();
+    this.renderControlsHint();
+  }
+
+  /** HOW TO PLAY: the four-step card. then() runs when they're done reading */
+  howTo(then, label = 'GOT IT') {
+    const g = this.game;
+    for (const el of document.querySelectorAll('#howto-panel .hk')) {
+      el.textContent = el.dataset.act === 'move' ? Binds.moveLabel() : Binds.label(el.dataset.act);
+    }
+    $('btn-howto-go').textContent = label;
+    $('btn-howto-go').onclick = () => { this.hide('howto-panel'); then?.(); };
+    this.show('howto-panel');
+    if (!g.settings.seenHowTo) { g.settings.seenHowTo = true; this.saveSettings(); }
+  }
+
+  /** the key list on the main menu, from the live binds */
+  renderControlsHint() {
+    const el = document.querySelector('.menu-controls');
+    if (!el) return;
+    const k = (a) => `<kbd>${Binds.label(a)}</kbd>`;
+    const rows = [
+      [`<kbd>${Binds.moveLabel()}</kbd>`, 'move'], ['<kbd>MOUSE</kbd>', 'aim · fire'], ['<kbd>RMB</kbd>', 'iron sights'],
+      [k('sprint'), 'sprint'], [k('jump'), 'jump'], [k('dash'), 'dash'],
+      [k('lethal'), 'lethal'], [k('tactical'), 'tactical'], [k('use'), 'use · buy · revive'],
+      [k('melee'), 'pistol-whip'], [k('reload'), 'reload'], [`${k('gun1')}${k('gun2')}${k('gun3')} / <kbd>WHEEL</kbd>`, 'guns'],
+      [k('scores'), 'scoreboard'], ['<kbd>ESC</kbd>', 'pause'], ['<kbd>F11</kbd>', 'fullscreen'],
+    ];
+    el.innerHTML = rows.map(([key, what]) => `<div>${key} ${what}</div>`).join('');
+    $('sb-key').textContent = Binds.label('scores');
   }
 
   saveSettings() {
